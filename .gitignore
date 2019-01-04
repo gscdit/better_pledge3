@@ -1,0 +1,13 @@
+venv/
+__pycache__
+app/__pycache__
+*.odt
+*.odt#
+*.pdf
+Procfile
+.idea
+.vscode
+migrations
+app.db
+app/app.db
+*.db

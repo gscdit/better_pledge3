@@ -87,6 +87,8 @@ def username_in_database_beneficiary(username):
     return username
 
 
+# TODO: name> first_name and last_name
+# TODO: also add address support on all routes.
 @app.route('/donor', methods=['POST'])
 def createdonor():
     donor = request.json
@@ -400,12 +402,12 @@ class UpdateUser(Resource):
             check_username = Donor.query.filter_by(username=updated_user['username']).first()
             if check_username:
                 if check_username.id != user.id:
-                    return {'message': 'username already exist'}
+                    return {'token': token, 'message': 0}
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
             check_username = Beneficiary.query.filter_by(username=updated_user['username']).first()
             if check_username.id != user.id:
-                return {'message': 'username already exist'}
+                return {'token': token, 'message': 0}
  
         # u = {'name': user.name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
         #      'email': user.email, 'username': user.username}
@@ -418,7 +420,7 @@ class UpdateUser(Resource):
                 {'username': user.username, 'name': user.name, 'type': type, 'id': user.id,
                     'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
                 app.config['SECRET_KEY'])
-        return {'token': token.decode('UTF-8')}
+        return {'token': token.decode('UTF-8'), 'message': 1}
 
 
 

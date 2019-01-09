@@ -103,7 +103,7 @@ def createdonor():
             username = username+'1'
             check_username = username_in_database_donor(username)
     print(username)
-    u = Donor(first_name=donor.get('first_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
+    u = Donor(first_name=donor.get('first_name'), last_name=donor.get('last_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
               password_hash=password_hash)
     if donor.get('address'):
         address = Address(donor=u, city=donor.get('city'), street=donor.get(
@@ -122,11 +122,11 @@ def donors():
         address = Address.query.filter_by(donor=donor).first()
         print(address)
         if address:
-            d = {'first_name': donor.first_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
+            d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username, 'city': address.city, 'country': address.country,
                  'street': address.street}
         else:
-            d = {'first_name': donor.first_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
+            d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username}
         donor_list.append(d)
     return jsonify({'donors': donor_list})
@@ -140,11 +140,11 @@ def beneficiaries():
         address = Address.query.filter_by(beneficiary=beneficiary).first()
         print(address)
         if address:
-            d = {'first_name': beneficiary.first_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
+            d = {'first_name': beneficiary.first_name,  'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username, 'city': address.city, 'country': address.country,
                  'street': address.street}
         else:
-            d = {'first_name': beneficiary.first_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
+            d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username}
         beneficiaries_list.append(d)
     return jsonify({'beneficiaries': beneficiaries_list})
@@ -165,7 +165,7 @@ def createbeneficiary():
             username = username+'1'
             check_username = username_in_database_beneficiary(username)
     print(username)
-    u = Beneficiary(first_name=beneficiary.get('first_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
+    u = Beneficiary(first_name=beneficiary.get('first_name'), 'last_name'=beneficiary.get('last_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
                     password_hash=password_hash, type=1)
     if beneficiary.get('address'):
         address = Address(beneficiary=u, city=beneficiary.get(
@@ -193,7 +193,7 @@ class Login(Resource):
             type = 'donor'
         if user and bcrypt.check_password_hash(user.password_hash, user_data.get('password')):
             token = jwt.encode(
-                {'username': user.username, 'first_name': user.first_name, 'type': type, 'id': user.id,
+                {'username': user.username, 'first_name': user.first_name, 'last_name': user.last_name, 'type': type, 'id': user.id,
                     'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
                 app.config['SECRET_KEY'])
             return {'token': token.decode('UTF-8')}
@@ -247,8 +247,8 @@ class Order(Resource):
         print(orders)
         order_list = []
         for order in orders:
-            l = {"donor": order.donor.first_name,
-                 "beneficiary": order.beneficiary.first_name}
+            l = {"donor": order.donor.first_name + order.donor.last_name,
+                 "beneficiary": order.beneficiary.first_name + order.beneficiary.last_name}
             print(l)
             order_list.append(l)
         print(order_list)
@@ -381,7 +381,7 @@ class Profile(Resource):
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
 
-        u = {'first_name': user.first_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
+        u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
              'email': user.email, 'username': user.username}
 
         return {'user': u}
@@ -414,6 +414,7 @@ class UpdateUser(Resource):
         #      'email': user.email, 'username': user.username}
 
         user.first_name = updated_user.get('first_name')
+        user.last_name = updated_user.get('last_name')
         user.phone_no = updated_user.get('phone_no')
         user.username = updated_user.get('username')
         db.session.commit()
@@ -433,3 +434,10 @@ api.add_resource(UpdateListing, '/updatelisting')
 api.add_resource(DeleteListing, '/deletelisting')
 api.add_resource(Profile, '/user')
 api.add_resource(UpdateUser, '/user/update')
+
+
+# /order -> orders of beneficiary. also add datestamp to the database.
+# /check_out route -> delete the quantity. also remove the products which has zero quantity.
+# add address support. also send it to products and my products.
+# add image api. image from front-end and return url.
+# notification to donor {later}

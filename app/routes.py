@@ -60,7 +60,7 @@ def home():
 def create():
     user = request.json
     print(user)
-    u = User(name=user.get('name'), info=user.get('info'))
+    u = User(first_name=user.get('first_name'), info=user.get('info'))
     db.session.add(u)
     db.session.commit()
     return jsonify({'message': 'user added to database'})
@@ -72,7 +72,7 @@ def users():
     users = User.query.all()
     users_list = []
     for user in users:
-        d = {'name': user.name, 'info': user.info, 'id': user.id}
+        d = {'first_name': user.first_name, 'info': user.info, 'id': user.id}
         users_list.append(d)
     return jsonify({'users': users_list})
 
@@ -87,7 +87,6 @@ def username_in_database_beneficiary(username):
     return username
 
 
-# TODO: name> first_name and last_name
 # TODO: also add address support on all routes.
 @app.route('/donor', methods=['POST'])
 def createdonor():
@@ -104,7 +103,7 @@ def createdonor():
             username = username+'1'
             check_username = username_in_database_donor(username)
     print(username)
-    u = Donor(name=donor.get('name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
+    u = Donor(first_name=donor.get('first_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
               password_hash=password_hash)
     if donor.get('address'):
         address = Address(donor=u, city=donor.get('city'), street=donor.get(
@@ -123,11 +122,11 @@ def donors():
         address = Address.query.filter_by(donor=donor).first()
         print(address)
         if address:
-            d = {'name': donor.name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
+            d = {'first_name': donor.first_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username, 'city': address.city, 'country': address.country,
                  'street': address.street}
         else:
-            d = {'name': donor.name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
+            d = {'first_name': donor.first_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username}
         donor_list.append(d)
     return jsonify({'donors': donor_list})
@@ -141,11 +140,11 @@ def beneficiaries():
         address = Address.query.filter_by(beneficiary=beneficiary).first()
         print(address)
         if address:
-            d = {'name': beneficiary.name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
+            d = {'first_name': beneficiary.first_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username, 'city': address.city, 'country': address.country,
                  'street': address.street}
         else:
-            d = {'name': beneficiary.name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
+            d = {'first_name': beneficiary.first_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username}
         beneficiaries_list.append(d)
     return jsonify({'beneficiaries': beneficiaries_list})
@@ -166,7 +165,7 @@ def createbeneficiary():
             username = username+'1'
             check_username = username_in_database_beneficiary(username)
     print(username)
-    u = Beneficiary(name=beneficiary.get('name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
+    u = Beneficiary(first_name=beneficiary.get('first_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
                     password_hash=password_hash, type=1)
     if beneficiary.get('address'):
         address = Address(beneficiary=u, city=beneficiary.get(
@@ -194,7 +193,7 @@ class Login(Resource):
             type = 'donor'
         if user and bcrypt.check_password_hash(user.password_hash, user_data.get('password')):
             token = jwt.encode(
-                {'username': user.username, 'name': user.name, 'type': type, 'id': user.id,
+                {'username': user.username, 'first_name': user.first_name, 'type': type, 'id': user.id,
                     'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
                 app.config['SECRET_KEY'])
             return {'token': token.decode('UTF-8')}
@@ -227,11 +226,11 @@ class Listing(Resource):
         listing = request.json
         if not listing:
             return {"not": "json"}
-        print(token_data.get('name'))
+        print(token_data.get('first_name'))
         donor = Donor.query.filter_by(
             username=token_data.get('username')).first()
         print(listing)
-        print(donor.name)
+        print(donor.first_name)
         print(donor.id)
         # print(donor.username, "xxx")
         l = Listings(quantity=listing.get('quantity'), expiry=listing.get('expiry'),
@@ -248,8 +247,8 @@ class Order(Resource):
         print(orders)
         order_list = []
         for order in orders:
-            l = {"donor": order.donor.name,
-                 "beneficiary": order.beneficiary.name}
+            l = {"donor": order.donor.first_name,
+                 "beneficiary": order.beneficiary.first_name}
             print(l)
             order_list.append(l)
         print(order_list)
@@ -382,7 +381,7 @@ class Profile(Resource):
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
 
-        u = {'name': user.name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
+        u = {'first_name': user.first_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
              'email': user.email, 'username': user.username}
 
         return {'user': u}
@@ -399,29 +398,30 @@ class UpdateUser(Resource):
         username = token_data.get("username")
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
-            check_username = Donor.query.filter_by(username=updated_user['username']).first()
+            check_username = Donor.query.filter_by(
+                username=updated_user['username']).first()
             if check_username:
                 if check_username.id != user.id:
                     return {'token': token, 'message': 0}
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
-            check_username = Beneficiary.query.filter_by(username=updated_user['username']).first()
+            check_username = Beneficiary.query.filter_by(
+                username=updated_user['username']).first()
             if check_username.id != user.id:
                 return {'token': token, 'message': 0}
- 
+
         # u = {'name': user.name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
         #      'email': user.email, 'username': user.username}
 
-        user.name = updated_user.get('name')
+        user.first_name = updated_user.get('first_name')
         user.phone_no = updated_user.get('phone_no')
         user.username = updated_user.get('username')
         db.session.commit()
         token = jwt.encode(
-                {'username': user.username, 'name': user.name, 'type': type, 'id': user.id,
-                    'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
-                app.config['SECRET_KEY'])
+            {'username': user.username, 'first_name': user.first_name, 'type': type, 'id': user.id,
+             'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
+            app.config['SECRET_KEY'])
         return {'token': token.decode('UTF-8'), 'message': 1}
-
 
 
 api.add_resource(Login, '/login')

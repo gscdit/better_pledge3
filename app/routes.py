@@ -165,7 +165,7 @@ def createbeneficiary():
             username = username+'1'
             check_username = username_in_database_beneficiary(username)
     print(username)
-    u = Beneficiary(first_name=beneficiary.get('first_name'), 'last_name'=beneficiary.get('last_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
+    u = Beneficiary(first_name=beneficiary.get('first_name'), last_name=beneficiary.get('last_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
                     password_hash=password_hash, type=1)
     if beneficiary.get('address'):
         address = Address(beneficiary=u, city=beneficiary.get(

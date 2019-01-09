@@ -26,7 +26,9 @@ class Donor(db.Model):
 
 class Beneficiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(30))
+    first_name = db.Column(db.String(30))
+    last_name = db.Column(db.String(30))
+    # name = db.Column(db.String(30))
     # location = db.Column(db.String(50))
     # address = db.Column(db.String(200))
     email = db.Column(db.String(80))

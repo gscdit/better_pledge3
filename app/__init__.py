@@ -1,4 +1,3 @@
-from app import routes
 from flask import Flask
 from config import Config
 from flask_restful import Api
@@ -19,3 +18,5 @@ api = Api(app)
 migrate = Migrate(app, db)
 admin = Admin(app, name='Better Pledge', template_mode='bootstrap3')
 CORS(app)
+
+from flask_migrate import Migrate

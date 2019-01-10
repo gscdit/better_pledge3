@@ -70,6 +70,8 @@ class Orders(db.Model):
                                nullable=False)
     listing_id = db.Column(db.Integer, db.ForeignKey(
         'listings.id'), nullable=False)
+    quantity = db.Column(db.String(20))
+    time_stamp = db.Column(db.String(20))
 
 
 class Listings(db.Model):

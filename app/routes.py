@@ -324,16 +324,34 @@ class Order(Resource):
     def post(self):
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
-        order = request.json
-        if not order:
+        json_data = request.json
+        if not json_data:
             return {"not": "json"}
-        donor = Donor.query.get(order.get('donor_id'))
-        beneficiary = Beneficiary.query.filter_by(
-            username=order.get('beneficiary_username')).first()
-        listing = Listings.query.get(order.get('listing_id'))
-        o = Orders(donor=donor, beneficiary=beneficiary, listing=listing)
-        db.session.add(o)
-        db.session.commit()
+        orders = json_data.get('orders')
+        for i in range(1, len(orders)):
+            order = orders[i].get('product')
+            donor = Donor.query.get(order.get('donor_id'))
+            beneficiary_username = token_data.get("username")
+            beneficiary = Beneficiary.query.filter_by(
+                username=beneficiary_username).first()
+            listing = Listings.query.get(order.get('listing_id'))
+            quantity = orders[i].get('quantity')
+            listing.quantity -= quantity
+            o = Orders(donor=donor, beneficiary=beneficiary,
+                       listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
+            db.session.add(o)
+            db.session.commit()
+
+        # donor = Donor.query.get(order.get('donor_id'))
+        # beneficiary_username = token_data.get("username")
+        # beneficiary = Beneficiary.query.filter_by(
+        #     username=beneficiary_username).first()
+        # listing = Listings.query.get(order.get('listing_id'))
+        # listing.quantity -= quantity
+        # o = Orders(donor=donor, beneficiary=beneficiary,
+        #            listing=listing, quantity=quantity, time_stamp=order.get('time_stamp'))
+        # db.session.add(o)
+        # db.session.commit()
         return {"orders": "added"}
 
 
@@ -483,6 +501,8 @@ class UpdateUser(Resource):
              'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
             app.config['SECRET_KEY'])
         return {'token': token.decode('UTF-8'), 'message': 1}
+
+# class Order
 
 
 api.add_resource(Login, '/login')

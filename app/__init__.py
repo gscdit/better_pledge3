@@ -19,4 +19,4 @@ migrate = Migrate(app, db)
 admin = Admin(app, name='Better Pledge', template_mode='bootstrap3')
 CORS(app)
 
-from flask_migrate import Migrate
+from app import routes

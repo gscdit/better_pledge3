@@ -90,6 +90,17 @@ def username_in_database_beneficiary(username):
 # TODO: also add address support on all routes.
 @app.route('/donor', methods=['POST'])
 def createdonor():
+    """
+    @api {post} /donor add a new donor
+    @apiVersion 1.0.0
+    @apiName add_user
+    @apiGroup Donor
+    @apiParam {String}      first_name      The first name of the Donor.
+    @apiParam {String}      last_name       the last name of the Donor.
+    @apiParam {String}      email           email of Donor.
+    @apiParam {Object}      phone_no        phone number of Donor
+    @apiSuccess {Number}    message         donor The new user id.
+    """
     donor = request.json
     if not donor:
         return "not json"
@@ -116,6 +127,20 @@ def createdonor():
 
 @app.route('/donors', methods=['GET'])
 def donors():
+    """
+    @api {get} /donors Display all donors
+    @apiVersion 1.0.0
+    @apiName get_user
+    @apiGroup Donor
+    @apiDescription Display all donors
+    @apiSuccess {Number}    id              The donors's id.
+    @apiSuccess {String}    username        The donors's username.
+    @apiSuccess {String}    first_name      The first name of the donor.
+    @apiSuccess {String}    last_name       The last name of the donor.
+    @apiSuccess {String}    password_hash   password_hash of the user
+    @apiSuccess {Number}    email           email of donor
+    @apiSuccess {Number}    phone_no        phone_no of donor
+    """
     donors = Donor.query.all()
     donor_list = []
     for donor in donors:
@@ -134,6 +159,20 @@ def donors():
 
 @app.route('/beneficiaries', methods=['GET'])
 def beneficiaries():
+    """
+    @api {get} /beneficiaries Display all beneficiaries
+    @apiVersion 1.0.0
+    @apiName get_beneficiary
+    @apiGroup Beneficiary
+    @apiDescription Display all beneficiaries
+    @apiSuccess {Number}    id              The beneficiary's id.
+    @apiSuccess {String}    username        The beneficiary's username.
+    @apiSuccess {String}    first_name      The first name of the beneficiary.
+    @apiSuccess {String}    last_name       The last name of the beneficiary.
+    @apiSuccess {String}    password_hash   password_hash of the beneficiary
+    @apiSuccess {Number}    email           email of beneficiary
+    @apiSuccess {Number}    phone_no        phone_no of beneficiary
+    """
     beneficiaries = Beneficiary.query.all()
     beneficiaries_list = []
     for beneficiary in beneficiaries:
@@ -152,6 +191,16 @@ def beneficiaries():
 
 @app.route('/beneficiary', methods=['POST'])
 def createbeneficiary():
+    """
+    @api {post} /beneficiary Add a new beneficiary
+    @apiVersion 1.0.0
+    @apiName add_beneficiary
+    @apiGroup Beneficiary
+    @apiParam {String}      first_name      The first name of the Beneficiary.
+    @apiParam {String}      last_name       the last name of the Beneficiary.
+    @apiParam {String}      email           email of Beneficiary.
+    @apiParam {Object}      phone_no        phone number of Beneficiary
+    """
     beneficiary = request.json
     if not beneficiary:
         return "not json"
@@ -181,6 +230,17 @@ class Login(Resource):
         return {"hi": "testing"}
 
     def post(self):
+        """
+        @api {post} /login get jwt token 
+        @apiVersion 1.0.0
+        @apiName Login
+        @apiGroup Login
+        @apiParam {String}      type            if user is 'donor' or 'beneficiary'
+        @apiParam {Object}      email           email of user
+        @apiParam {Object}      password        password of user   
+        @apiSuccess {Number}    token           jwt token
+        """
+
         user_data = request.json
         if not user_data:
             return {"not": "json"}

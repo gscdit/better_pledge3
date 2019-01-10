@@ -1,0 +1,7 @@
+{
+    "name": "Better Pledge API",
+    "version": "1.0.0",
+    "description": "Flask REST API for http://betterpledgegsc.firebaseapp.com",
+    "title": "Better Pledge API",
+    "url": "http://localhost:5000"
+}

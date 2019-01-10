@@ -93,13 +93,14 @@ def createdonor():
     """
     @api {post} /donor add a new donor
     @apiVersion 1.0.0
-    @apiName add_user
+    @apiName createdonor
     @apiGroup Donor
     @apiParam {String}      first_name      The first name of the Donor.
     @apiParam {String}      last_name       the last name of the Donor.
     @apiParam {String}      email           email of Donor.
-    @apiParam {Object}      phone_no        phone number of Donor
-    @apiSuccess {Number}    message         donor The new user id.
+    @apiParam {String}      phone_no        phone number of Donor
+    @apiParam {String}      password        password of Donor
+    @apiSuccess {String}    message         donor added to database
     """
     donor = request.json
     if not donor:
@@ -130,7 +131,7 @@ def donors():
     """
     @api {get} /donors Display all donors
     @apiVersion 1.0.0
-    @apiName get_user
+    @apiName donors
     @apiGroup Donor
     @apiDescription Display all donors
     @apiSuccess {Number}    id              The donors's id.
@@ -194,12 +195,13 @@ def createbeneficiary():
     """
     @api {post} /beneficiary Add a new beneficiary
     @apiVersion 1.0.0
-    @apiName add_beneficiary
+    @apiName createbeneficiary
     @apiGroup Beneficiary
     @apiParam {String}      first_name      The first name of the Beneficiary.
     @apiParam {String}      last_name       the last name of the Beneficiary.
     @apiParam {String}      email           email of Beneficiary.
-    @apiParam {Object}      phone_no        phone number of Beneficiary
+    @apiParam {String}      phone_no        phone number of Beneficiary
+    @apiParam {String}      password        password of Beneficiary
     """
     beneficiary = request.json
     if not beneficiary:
@@ -328,15 +330,18 @@ class Order(Resource):
         if not json_data:
             return {"not": "json"}
         orders = json_data.get('orders')
+        print(orders)
         for i in range(1, len(orders)):
             order = orders[i].get('product')
+            print(order)
             donor = Donor.query.get(order.get('donor_id'))
             beneficiary_username = token_data.get("username")
             beneficiary = Beneficiary.query.filter_by(
                 username=beneficiary_username).first()
             listing = Listings.query.get(order.get('listing_id'))
             quantity = orders[i].get('quantity')
-            listing.quantity -= quantity
+            print(quantity)
+            listing.quantity -= int(quantity)
             o = Orders(donor=donor, beneficiary=beneficiary,
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)

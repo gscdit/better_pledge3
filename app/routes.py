@@ -106,9 +106,9 @@ def createdonor():
     if not donor:
         return "not json"
     print(donor)
-    check_donor = Donor.query.filter_by(email=donor.get('email'))
+    check_donor = Donor.query.filter_by(email=donor.get('email')).first()
     if check_donor:
-        return {'message': 'donor with that email already exists'}
+        return jsonify({'message': 'donor with that email already exists'})
     password_hash = bcrypt.generate_password_hash(
         donor.get('password')).decode('utf-8')
     username = donor.get('email').split('@')[0]
@@ -211,9 +211,10 @@ def createbeneficiary():
         return "not json"
     print(beneficiary)
     check_beneficiary = Beneficiary.query.filter_by(
-        email=beneficiary.get('email'))
+        email=beneficiary.get('email')).first()
+    print(check_beneficiary)
     if check_beneficiary:
-        return {'message': 'beneficiary with that email already exists'}
+        return jsonify({'message': 'beneficiary with that email already exists'})
     password_hash = bcrypt.generate_password_hash(
         beneficiary.get('password')).decode('utf-8')
     username = beneficiary.get('email').split('@')[0]

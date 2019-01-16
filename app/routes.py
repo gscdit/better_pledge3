@@ -331,7 +331,9 @@ class Order(Resource):
             return {"not": "json"}
         orders = json_data.get('orders')
         print(orders)
-        for i in range(1, len(orders)):
+        for i in range(0, len(orders)):
+            if orders[i] is None:
+                continue 
             order = orders[i].get('product')
             print(order)
             donor = Donor.query.get(order.get('donor_id'))
@@ -521,8 +523,9 @@ api.add_resource(Profile, '/user')
 api.add_resource(UpdateUser, '/user/update')
 
 
-# /order -> orders of beneficiary. also add datestamp to the database.
-# /check_out route -> delete the quantity. also remove the products which has zero quantity.
+# /order -> orders of beneficiary. also add datestamp to the database.[done]
+# /check_out route -> delete the quantity. also remove the products which has zero quantity.[done]
+# remove those listings which have 0 quantity
 # add address support. also send it to products and my products.
 # add image api. image from front-end and return url.
 # notification to donor {later}

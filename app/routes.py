@@ -391,6 +391,9 @@ class Order(Resource):
             beneficiary_username = token_data.get("username")
             beneficiary = Beneficiary.query.filter_by(
                 username=beneficiary_username).first()
+            if not beneficiary:
+                return {'message': 'beneficiary not found', 'username': beneficiary_username}
+
             listing = Listings.query.get(order.get('listing_id'))
             quantity = orders[i].get('quantity')
             if quantity < 0:
@@ -399,7 +402,7 @@ class Order(Resource):
             listing.quantity -= int(quantity)
             if listing.quantity < 0:
                 return {'message': 'quantity more than stock'}
-            o = Orders(donor=donor, beneficiary=beneficiary,
+            o = Orders(donor=donor, beneficiary_id=beneficiary.id,
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
             db.session.commit()

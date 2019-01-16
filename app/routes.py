@@ -323,8 +323,8 @@ class Order(Resource):
     # image = db.Column(db.String(100))
 
 # {	"time_stamp": "1324",
-#     "orders":{
-#     	"1": {
+#     "orders":[
+#     	 {
 #         "product":{
 #           "donor_id": 1,
 #           "listing_id": 3
@@ -332,14 +332,14 @@ class Order(Resource):
 #         "quantity": 3
 #       },
 
-#     	"2": {
+#     	 {
 #         "product":{
 #           "donor_id": 1,
 #           "listing_id": 3
 #         },
 #         "quantity": 3
 #       }
-#     }
+#     ]
 # }
 
 
@@ -368,11 +368,12 @@ class Order(Resource):
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         json_data = request.json
+        print(json_data)
         if not json_data:
             return {"not": "json"}
         orders = json_data.get('orders')
         print(orders)
-        for i in orders.keys():
+        for i in range(0, len(orders)):
             if orders[i] is None:
                 continue
             order = orders[i].get('product')

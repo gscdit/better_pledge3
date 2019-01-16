@@ -322,6 +322,47 @@ class Order(Resource):
     # type = db.Column(db.String(10))
     # image = db.Column(db.String(100))
 
+# {	"time_stamp": "1324",
+#     "orders":{
+#     	"1": {
+#         "product":{
+#           "donor_id": 1,
+#           "listing_id": 3
+#         },
+#         "quantity": 3
+#       },
+
+#     	"2": {
+#         "product":{
+#           "donor_id": 1,
+#           "listing_id": 3
+#         },
+#         "quantity": 3
+#       }
+#     }
+# }
+
+
+# {	"time_stamp": "1324",
+#     "orders":[
+#     	"",
+#     	{
+#         "product":{
+#           "donor_id": 1,
+#           "listing_id": 1
+#         },
+#         "quantity": 1
+#       },
+#       {
+#         "product":{
+#           "donor_id": 1,
+#           "listing_id": 2
+#         },
+#         "quantity": 1
+#       }
+# 	]
+# }
+
     @token_required
     def post(self):
         token = request.headers.get("x-access-token")
@@ -331,9 +372,9 @@ class Order(Resource):
             return {"not": "json"}
         orders = json_data.get('orders')
         print(orders)
-        for i in range(0, len(orders)):
+        for i in orders.keys():
             if orders[i] is None:
-                continue 
+                continue
             order = orders[i].get('product')
             print(order)
             donor = Donor.query.get(order.get('donor_id'))
@@ -342,8 +383,12 @@ class Order(Resource):
                 username=beneficiary_username).first()
             listing = Listings.query.get(order.get('listing_id'))
             quantity = orders[i].get('quantity')
+            if quantity < 0:
+                return {'message': 'listing quantity less than 0'}
             print(quantity)
             listing.quantity -= int(quantity)
+            if listing.quantity < 0:
+                return {'message': 'quantity more than stock'}
             o = Orders(donor=donor, beneficiary=beneficiary,
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)

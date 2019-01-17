@@ -586,7 +586,21 @@ class UpdateUser(Resource):
 class BeneficiaryOrders(Resource):
     @token_required
     def get(self):
-        token = request.headers.get("x-access-token")
+        """
+        @api {get} /donors Display all donors
+        @apiVersion 1.0.0
+        @apiName donors
+        @apiGroup Donor
+        @apiDescription Display all donors
+        @apiSuccess {Number}    id              The donors's id.
+        @apiSuccess {String}    username        The donors's username.
+        @apiSuccess {String}    first_name      The first name of the donor.
+        @apiSuccess {String}    last_name       The last name of the donor.
+        @apiSuccess {String}    password_hash   password_hash of the user
+        @apiSuccess {Number}    email           email of donor
+        @apiSuccess {Number}    phone_no        phone_no of donor
+        """
+       token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
         beneficiary = Beneficiary.query.filter_by(username=username).first()
@@ -595,7 +609,7 @@ class BeneficiaryOrders(Resource):
         for order in orders:
             l = {"donor_id": order.donor_id,
                  "beneficiary_id": order.beneficiary_id,
-                 "listing_id": order.lising_id,
+                 "listing_id": order.listing_id,
                  "quantity": order.quantity,
                  "time_stamp": order.time_stamp}
             print(l)

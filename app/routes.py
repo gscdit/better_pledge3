@@ -119,7 +119,7 @@ def createdonor():
             check_username = username_in_database_donor(username)
     print(username)
     u = Donor(first_name=donor.get('first_name'), last_name=donor.get('last_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
-              password_hash=password_hash)
+              password_hash=password_hash, organisation=donor.get('organisation'))
     # if donor.get('address'):
     address = Address(donor=u, city=donor.get('city'), street=donor.get(
         'street'), country=donor.get('country'), landmark=donor.get('landmark'))
@@ -153,7 +153,7 @@ def donors():
         if address:
             d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username, 'city': address.city, 'country': address.country,
-                 'street': address.street, 'landmark': address.landmark}
+                 'street': address.street, 'landmark': address.landmark, 'organisation': donor.organisation}
         else:
             d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username}
@@ -276,12 +276,13 @@ class Listing(Resource):
         listings = Listings.query.all()
         listing_list = []
         for listing in listings:
+            donor = Donor.query.get(listing.donor_id)
             address = Address.query.filter_by(
                 donor_id=listing.donor_id).first()
             l = {"listing_id": listing.id,
                  "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                  "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
-                 "landmark": address.landmark, "city": address.city, "country": address.country}
+                 "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
             listing_list.append(l)
         print(listing_list)
         return {"listing": listing_list}
@@ -376,6 +377,7 @@ class Order(Resource):
 #       }
 # 	]
 # }
+
 
     @token_required
     def post(self):
@@ -532,7 +534,7 @@ class Profile(Resource):
             address = Address.query.filter_by(beneficiary_id=user.id).first()
 
         u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
-             'email': user.email, 'username': user.username, 'street': address.street, 'landmark': address.landmark,
+             'email': user.email, 'username': user.username, 'organisation': user.organisation, 'street': address.street, 'landmark': address.landmark,
              'city': address.city, 'country': address.country}
 
         return {'user': u}
@@ -549,6 +551,7 @@ class UpdateUser(Resource):
         username = token_data.get("username")
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
+            user.organisation = updated_user.get('organisation')
             address = Address.query.filter_by(donor_id=user.id).first()
             check_username = Donor.query.filter_by(
                 username=updated_user['username']).first()

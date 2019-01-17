@@ -16,6 +16,7 @@ class Donor(db.Model):
     email = db.Column(db.String(80))
     username = db.Column(db.String(40), unique=True)
     phone_no = db.Column(db.String(13))
+    organisation = db.Column(db.String(50))
     password_hash = db.Column(db.String(60))
     # rating = db.Column(db.String(5))
     address = db.relationship('Address', backref='donor', lazy=True)

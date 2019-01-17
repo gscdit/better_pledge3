@@ -600,7 +600,7 @@ class BeneficiaryOrders(Resource):
         @apiSuccess {Number}    email           email of donor
         @apiSuccess {Number}    phone_no        phone_no of donor
         """
-       token = request.headers.get("x-access-token")
+        token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
         beneficiary = Beneficiary.query.filter_by(username=username).first()
@@ -630,7 +630,7 @@ class DonorOrders(Resource):
         for order in orders:
             l = {"donor_id": order.donor_id,
                  "beneficiary_id": order.beneficiary_id,
-                 "listing_id": order.lising_id,
+                 "listing_id": order.listing_id,
                  "quantity": order.quantity,
                  "time_stamp": order.time_stamp}
             print(l)

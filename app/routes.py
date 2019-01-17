@@ -635,6 +635,7 @@ api.add_resource(DeleteListing, '/deletelisting')
 api.add_resource(Profile, '/user')
 api.add_resource(UpdateUser, '/user/update')
 api.add_resource(BeneficiaryOrders, '/beneficiary/orders')
+api.add_resource(DonorOrders, '/donor/orders')
 
 
 # /order -> orders of beneficiary. also add datestamp to the database.[done]

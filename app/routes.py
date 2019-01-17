@@ -320,8 +320,11 @@ class Order(Resource):
         print(orders)
         order_list = []
         for order in orders:
-            l = {"donor": order.donor.first_name + order.donor.last_name,
-                 "beneficiary": order.beneficiary.first_name + order.beneficiary.last_name}
+            l = {"donor_id": order.donor_id,
+                 "beneficiary_id": order.beneficiary_id,
+                 "listing_id": order.lising_id,
+                 "quantity": order.quantity,
+                 "time_stamp": order.time_stamp}
             print(l)
             order_list.append(l)
         print(order_list)
@@ -373,6 +376,7 @@ class Order(Resource):
 #       }
 # 	]
 # }
+
 
     @token_required
     def post(self):
@@ -577,7 +581,48 @@ class UpdateUser(Resource):
             app.config['SECRET_KEY'])
         return {'token': token.decode('UTF-8'), 'message': 1}
 
+
 # class Order
+class BeneficiaryOrders(Resource):
+    @token_required
+    def get(self):
+        token = request.headers.get("x-access-token")
+        token_data = jwt.decode(token, app.config['SECRET_KEY'])
+        username = token_data.get("username")
+        beneficiary = Beneficiary.query.filter_by(username=username).first()
+        orders = Orders.query.filter_by(beneficiary_id=beneficiary.id).all()
+        order_list = []
+        for order in orders:
+            l = {"donor_id": order.donor_id,
+                 "beneficiary_id": order.beneficiary_id,
+                 "listing_id": order.lising_id,
+                 "quantity": order.quantity,
+                 "time_stamp": order.time_stamp}
+            print(l)
+            order_list.append(l)
+        print(order_list)
+        return {"orders": order_list}
+
+
+class DonorOrders(Resource):
+    @token_required
+    def get(self):
+        token = request.headers.get("x-access-token")
+        token_data = jwt.decode(token, app.config['SECRET_KEY'])
+        username = token_data.get("username")
+        donor = Donor.query.filter_by(username=username).first()
+        orders = Orders.query.filter_by(donor_id=donor.id).all()
+        order_list = []
+        for order in orders:
+            l = {"donor_id": order.donor_id,
+                 "beneficiary_id": order.beneficiary_id,
+                 "listing_id": order.lising_id,
+                 "quantity": order.quantity,
+                 "time_stamp": order.time_stamp}
+            print(l)
+            order_list.append(l)
+        print(order_list)
+        return {"orders": order_list}
 
 
 api.add_resource(Login, '/login')
@@ -589,6 +634,7 @@ api.add_resource(UpdateListing, '/updatelisting')
 api.add_resource(DeleteListing, '/deletelisting')
 api.add_resource(Profile, '/user')
 api.add_resource(UpdateUser, '/user/update')
+api.add_resource(BeneficiaryOrders, '/beneficiary/orders')
 
 
 # /order -> orders of beneficiary. also add datestamp to the database.[done]

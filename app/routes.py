@@ -377,7 +377,6 @@ class Order(Resource):
 # 	]
 # }
 
-
     @token_required
     def post(self):
         token = request.headers.get("x-access-token")
@@ -587,18 +586,37 @@ class BeneficiaryOrders(Resource):
     @token_required
     def get(self):
         """
-        @api {get} /donors Display all donors
+        @api {get} /beneficiary/orders Display all orders of beneficiary
         @apiVersion 1.0.0
-        @apiName donors
-        @apiGroup Donor
-        @apiDescription Display all donors
-        @apiSuccess {Number}    id              The donors's id.
-        @apiSuccess {String}    username        The donors's username.
-        @apiSuccess {String}    first_name      The first name of the donor.
-        @apiSuccess {String}    last_name       The last name of the donor.
-        @apiSuccess {String}    password_hash   password_hash of the user
-        @apiSuccess {Number}    email           email of donor
-        @apiSuccess {Number}    phone_no        phone_no of donor
+        @apiName beneficiaryorders
+        @apiGroup Beneficiary
+
+        @apiSuccess {Integer} donor_id           donor id
+        @apiSuccess {Integer} beneficiary_id     beneficiary id
+        @apiSuccess {Integer} listing_id         listing id
+        @apiSuccess {String} quantity            quantity of listing.
+        @apiSuccess {String} time_stamp          time stamp.
+        @apiSuccess {String} street              street(address)
+        @apiSuccess {String} landmark            landmark(address)
+        @apiSuccess {String} city                city(address)
+        @apiSuccess {String} country             country(address)
+        @apiSuccess {String} image               image url
+        @apiSuccess {String} description         description of listing
+
+        @apiSuccessExample Success-Response:
+            HTTP/1.1 200 OK
+            {
+                "firstname": "John",
+                "lastname": "Doe"
+            }
+
+        @apiError UserNotFound The id of the User was not found.
+
+        @apiErrorExample Error-Response:
+            HTTP/1.1 404 Not Found
+            {
+                "error": "UserNotFound"
+            }
         """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -606,12 +624,23 @@ class BeneficiaryOrders(Resource):
         beneficiary = Beneficiary.query.filter_by(username=username).first()
         orders = Orders.query.filter_by(beneficiary_id=beneficiary.id).all()
         order_list = []
+        #address, url, description, organisation
         for order in orders:
-            l = {"donor_id": order.donor_id,
-                 "beneficiary_id": order.beneficiary_id,
-                 "listing_id": order.listing_id,
-                 "quantity": order.quantity,
-                 "time_stamp": order.time_stamp}
+            address = Address.query.filter_by(donor_id=order.donor_id).first()
+            listing = Listings.query.get(order.listing_id)
+            l = {
+                "donor_id": order.donor_id,
+                "beneficiary_id": order.beneficiary_id,
+                "listing_id": order.listing_id,
+                "quantity": order.quantity,
+                "time_stamp": order.time_stamp,
+                "street": address.street,
+                "landmark": address.landmark,
+                "city": address.city,
+                "country": address.country,
+                "image": listing.image,
+                "description": listing.description
+            }
             print(l)
             order_list.append(l)
         print(order_list)
@@ -628,11 +657,19 @@ class DonorOrders(Resource):
         orders = Orders.query.filter_by(donor_id=donor.id).all()
         order_list = []
         for order in orders:
+            address = Address.query.filter_by(donor_id=order.donor_id).first()
+            listing = Listings.query.get(order.listing_id)
             l = {"donor_id": order.donor_id,
                  "beneficiary_id": order.beneficiary_id,
                  "listing_id": order.listing_id,
                  "quantity": order.quantity,
-                 "time_stamp": order.time_stamp}
+                 "time_stamp": order.time_stamp,
+                 "street": address.street,
+                 "landmark": address.landmark,
+                 "city": address.city,
+                 "country": address.country,
+                 "image": listing.image,
+                 "description": listing.description}
             print(l)
             order_list.append(l)
         print(order_list)

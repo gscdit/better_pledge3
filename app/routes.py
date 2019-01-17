@@ -276,9 +276,12 @@ class Listing(Resource):
         listings = Listings.query.all()
         listing_list = []
         for listing in listings:
+            address = Address.query.filter_by(
+                donor_id=listing.donor_id).first()
             l = {"listing_id": listing.id,
                  "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                 "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}
+                 "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                 "landmark": address.landmark, "city": address.city, "country": address.country}
             listing_list.append(l)
         print(listing_list)
         return {"listing": listing_list}
@@ -370,7 +373,6 @@ class Order(Resource):
 #       }
 # 	]
 # }
-
 
     @token_required
     def post(self):
@@ -521,11 +523,14 @@ class Profile(Resource):
         username = token_data.get("username")
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
+            address = Address.query.filter_by(donor_id=user.id).first()
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
+            address = Address.query.filter_by(beneficiary_id=user.id).first()
 
         u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
-             'email': user.email, 'username': user.username}
+             'email': user.email, 'username': user.username, 'street': address.street, 'landmark': address.landmark,
+             'city': address.city, 'country': address.country}
 
         return {'user': u}
 
@@ -541,6 +546,7 @@ class UpdateUser(Resource):
         username = token_data.get("username")
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
+            address = Address.query.filter_by(donor_id=user.id).first()
             check_username = Donor.query.filter_by(
                 username=updated_user['username']).first()
             if check_username:
@@ -548,6 +554,7 @@ class UpdateUser(Resource):
                     return {'token': token, 'message': 0}
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
+            address = Address.query.filter_by(beneficiary_id=user.id).first()
             check_username = Beneficiary.query.filter_by(
                 username=updated_user['username']).first()
             if check_username.id != user.id:
@@ -555,7 +562,10 @@ class UpdateUser(Resource):
 
         # u = {'name': user.name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
         #      'email': user.email, 'username': user.username}
-
+        address.street = updated_user.get('street')
+        address.city = updated_user.get('city')
+        address.landmark = updated_user.get('landmark')
+        address.country = updated_user.get('country')
         user.first_name = updated_user.get('first_name')
         user.last_name = updated_user.get('last_name')
         user.phone_no = updated_user.get('phone_no')

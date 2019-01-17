@@ -120,10 +120,10 @@ def createdonor():
     print(username)
     u = Donor(first_name=donor.get('first_name'), last_name=donor.get('last_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
               password_hash=password_hash)
-    if donor.get('address'):
-        address = Address(donor=u, city=donor.get('city'), street=donor.get(
-            'street'), country=donor.get('country'))
-        db.session.add(address)
+    # if donor.get('address'):
+    address = Address(donor=u, city=donor.get('city'), street=donor.get(
+        'street'), country=donor.get('country'), landmark=donor.get('landmark'))
+    db.session.add(address)
     db.session.add(u)
     db.session.commit()
     return jsonify({'message': 'donor added to database'})
@@ -153,7 +153,7 @@ def donors():
         if address:
             d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username, 'city': address.city, 'country': address.country,
-                 'street': address.street}
+                 'street': address.street, 'landmark': address.landmark}
         else:
             d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username}
@@ -183,9 +183,9 @@ def beneficiaries():
         address = Address.query.filter_by(beneficiary=beneficiary).first()
         print(address)
         if address:
-            d = {'first_name': beneficiary.first_name,  'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
+            d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username, 'city': address.city, 'country': address.country,
-                 'street': address.street}
+                 'street': address.street, 'landmark': address.landmark}
         else:
             d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username}
@@ -226,10 +226,10 @@ def createbeneficiary():
     print(username)
     u = Beneficiary(first_name=beneficiary.get('first_name'), last_name=beneficiary.get('last_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
                     password_hash=password_hash, type=1)
-    if beneficiary.get('address'):
-        address = Address(beneficiary=u, city=beneficiary.get(
-            'city'), street=beneficiary.get('street'), country=beneficiary.get('country'))
-        db.session.add(address)
+    # if beneficiary.get('address'):
+    address = Address(beneficiary=u, city=beneficiary.get(
+        'city'), street=beneficiary.get('street'), country=beneficiary.get('country'), landmark=beneficiary.get('landmark'))
+    db.session.add(address)
     db.session.add(u)
     db.session.commit()
     return jsonify({'message': 'beneficiary added to database'})

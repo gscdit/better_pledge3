@@ -43,13 +43,12 @@ class Beneficiary(db.Model):
 
 class Address(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    donor_id = db.Column(db.Integer, db.ForeignKey('donor.id'),
-                         nullable=False)
-    beneficiary_id = db.Column(db.Integer, db.ForeignKey('beneficiary.id'),
-                               nullable=False)
+    donor_id = db.Column(db.Integer, db.ForeignKey('donor.id'))
+    beneficiary_id = db.Column(db.Integer, db.ForeignKey('beneficiary.id'))
     city = db.Column(db.String(20))
     street = db.Column(db.String(20))
     country = db.Column(db.String(20))
+    landmark = db.Column(db.String(50))
 
 
 class Reviews(db.Model):

@@ -257,13 +257,15 @@ class Login(Resource):
         if user_data.get('type') == 'beneficiary':
             user = Beneficiary.query.filter_by(
                 email=user_data.get('email')).first()
+            organisation = ""
             type = 'beneficiary'
         else:
             user = Donor.query.filter_by(email=user_data.get('email')).first()
+            organisation = user.organisation
             type = 'donor'
         if user and bcrypt.check_password_hash(user.password_hash, user_data.get('password')):
             token = jwt.encode(
-                {'username': user.username, 'first_name': user.first_name, 'last_name': user.last_name, 'type': type, 'id': user.id,
+                {'username': user.username, 'first_name': user.first_name, 'organisation': organisation, 'last_name': user.last_name, 'type': type, 'id': user.id,
                     'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
                 app.config['SECRET_KEY'])
             return {'token': token.decode('UTF-8')}

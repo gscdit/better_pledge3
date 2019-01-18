@@ -121,8 +121,10 @@ def createdonor():
     u = Donor(first_name=donor.get('first_name'), last_name=donor.get('last_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
               password_hash=password_hash, organisation=donor.get('organisation'))
     # if donor.get('address'):
+    print(donor.get('hello'))
     address = Address(donor=u, city=donor.get('city'), street=donor.get(
         'street'), country=donor.get('country'), landmark=donor.get('landmark'))
+    print(address.city)
     db.session.add(address)
     db.session.add(u)
     db.session.commit()
@@ -278,34 +280,37 @@ class Listing(Resource):
         send_all = request.args.get("send_all")
         if send_all == "1":
             listings = Listings.query.all()
-            listing_list = []
+            # listing_list = []
+            listing_dict = {}
             for listing in listings:
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
                 # if listing.quantity < 1:
                 #     continue
-                l = {"listing_id": listing.id,
-                     "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                     "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
-                     "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
-                listing_list.append(l)
+                listing_dict[listing.id] = {"listing_id": listing.id,
+                                            "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
+                                            "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                                            "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
+                # listing_list.append(l)
         else:
             listings = Listings.query.all()
-            listing_list = []
+            # listing_list = []
+            listing_dict = {}
             for listing in listings:
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
                 if listing.quantity < 1:
                     continue
-                l = {"listing_id": listing.id,
-                     "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                     "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
-                     "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
-                listing_list.append(l)
-        print(listing_list)
-        return {"listing": listing_list}
+                listing_dict[listing.id] = {"listing_id": listing.id,
+                                            "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
+                                            "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                                            "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
+                # listing_list.append(l)
+        # print(listing_list)
+        # return {"listing": listing_list}
+        return listing_dict
     #
     # quantity = db.Column(db.Integer)
     # expiry = db.Column(db.String(20))
@@ -397,6 +402,7 @@ class Order(Resource):
 #       }
 # 	]
 # }
+
 
     @token_required
     def post(self):
@@ -644,7 +650,7 @@ class BeneficiaryOrders(Resource):
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
         beneficiary = Beneficiary.query.filter_by(username=username).first()
-        orders = Orders.query.filter_by(beneficiary_id=beneficiary.id).all()
+        orders = Orders.query.filter_by(beneficiary_id=beneficiary.id)
         order_list = []
         #address, url, description, organisation
         for order in orders:
@@ -665,7 +671,8 @@ class BeneficiaryOrders(Resource):
             }
             print(l)
             order_list.append(l)
-        print(order_list)
+        # print(order_list)
+        order_list.reverse()
         return {"orders": order_list}
 
 
@@ -691,7 +698,8 @@ class DonorOrders(Resource):
                  "city": address.city,
                  "country": address.country,
                  "image": listing.image,
-                 "description": listing.description}
+                 "description": listing.description,
+                 "organisation": donor.organisation}
             print(l)
             order_list.append(l)
         print(order_list)

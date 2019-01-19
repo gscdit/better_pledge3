@@ -286,8 +286,10 @@ class Listing(Resource):
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
-                # if listing.quantity < 1:
-                #     continue
+                if listing.quantity == None:
+                    continue
+                if listing.quantity < 1:
+                    continue
                 l = {"listing_id": listing.id,
                      "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                      "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
@@ -303,8 +305,8 @@ class Listing(Resource):
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
-                if listing.quantity < 1:
-                    continue
+                # if listing.quantity < 1:
+                #     continue
                 listing_dict[listing.id] = {"listing_id": listing.id,
                                             "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                                             "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,

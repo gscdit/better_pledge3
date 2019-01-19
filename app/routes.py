@@ -278,7 +278,7 @@ class Login(Resource):
 class Listing(Resource):
     def get(self):
         send_all = request.args.get("send_all")
-        if send_all == "1":
+        if send_all == "0":
             listings = Listings.query.all()
             listing_list = []
             # listing_dict = {}
@@ -295,7 +295,7 @@ class Listing(Resource):
                 listing_list.append(l)
             return {"listing": listing_list}
 
-        else:
+        elif send_all == "1":
             listings = Listings.query.all()
             # listing_list = []
             listing_dict = {}
@@ -313,6 +313,8 @@ class Listing(Resource):
         # print(listing_list)
         # return {"listing": listing_list}
             return listing_dict
+        else:
+            return {"message": "send_all not given"}, 403
     #
     # quantity = db.Column(db.Integer)
     # expiry = db.Column(db.String(20))

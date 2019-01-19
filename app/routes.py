@@ -280,19 +280,21 @@ class Listing(Resource):
         send_all = request.args.get("send_all")
         if send_all == "1":
             listings = Listings.query.all()
-            # listing_list = []
-            listing_dict = {}
+            listing_list = []
+            # listing_dict = {}
             for listing in listings:
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
                 # if listing.quantity < 1:
                 #     continue
-                listing_dict[listing.id] = {"listing_id": listing.id,
-                                            "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                                            "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
-                                            "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
-                # listing_list.append(l)
+                l = {"listing_id": listing.id,
+                     "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
+                     "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                     "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
+                listing_list.append(l)
+            return {"listing": listing_list}
+
         else:
             listings = Listings.query.all()
             # listing_list = []
@@ -310,7 +312,7 @@ class Listing(Resource):
                 # listing_list.append(l)
         # print(listing_list)
         # return {"listing": listing_list}
-        return listing_dict
+            return listing_dict
     #
     # quantity = db.Column(db.Integer)
     # expiry = db.Column(db.String(20))
@@ -402,7 +404,6 @@ class Order(Resource):
 #       }
 # 	]
 # }
-
 
     @token_required
     def post(self):

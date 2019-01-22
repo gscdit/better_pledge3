@@ -1,12 +1,19 @@
 from app import app, db, bcrypt, api, admin
 from flask import jsonify, request, make_response
 from flask_admin.contrib.sqla import ModelView
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from app.models import User, Donor, Address, Beneficiary, Listings, Orders, Reviews
 from functools import wraps
 from flask import g
+from werkzeug.utils import secure_filename
+import os
 import jwt
 import datetime
+import requests
+from PIL import Image
+from io import BytesIO
+import base64
+
 
 admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Donor, db.session))
@@ -16,6 +23,12 @@ admin.add_view(ModelView(Listings, db.session))
 admin.add_view(ModelView(Orders, db.session))
 admin.add_view(ModelView(Reviews, db.session))
 
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def login_required(f):
     @wraps(f)
@@ -544,7 +557,8 @@ class DeleteListing(Resource):
         if listing not in donor_listings:
             return {"permission": "denied"}
         print(listing.description)
-        db.session.delete(listing)
+        # db.session.delete(listing)
+        listing.quantity = 0
         db.session.commit()
         return {"listing": "deleted"}
 
@@ -559,13 +573,15 @@ class Profile(Resource):
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
             address = Address.query.filter_by(donor_id=user.id).first()
+            u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
+                 'email': user.email, 'username': user.username, 'organisation': user.organisation, 'street': address.street, 'landmark': address.landmark,
+                 'city': address.city, 'country': address.country}
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
             address = Address.query.filter_by(beneficiary_id=user.id).first()
-
-        u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
-             'email': user.email, 'username': user.username, 'organisation': user.organisation, 'street': address.street, 'landmark': address.landmark,
-             'city': address.city, 'country': address.country}
+            u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
+                 'email': user.email, 'username': user.username, 'street': address.street, 'landmark': address.landmark,
+                 'city': address.city, 'country': address.country}
 
         return {'user': u}
 
@@ -711,6 +727,92 @@ class DonorOrders(Resource):
         return {"orders": order_list}
 
 
+# randomize the image filename
+class UploadImage(Resource):
+    def post(self):
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            return {"message": "no file send"}
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            return {'massage': 'No selected file'}
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            path = os.path.join(app.root_path, filename)
+            file.save(path)
+            url = upload_to_imgur(path)
+            return {"url": url}
+        # file.save(path)
+        # returnoutput = BytesIO()
+# im = Image.open('image.jpg')
+# im.save(output, format='JPEG')
+# im_data = output.getvalue()
+# e64 = base64.b64encode(im_data)
+# #print(e64)
+# url = 'https://api.imgur.com/3/image'
+# payload = {'image': e64}
+# files = {}
+# headers = {
+#     'Authorization': 'Client-ID b24245cb0505c2c'
+# }
+# response = requests.request(
+#     'POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
+# # print(response.json())
+
+# content = response.json()
+# url = content.get('data').get('link')
+# print(url)
+
+# {'message': 'hello'}
+        # content = request.headers.get('image')
+        # # content = request.json
+        # print(content)
+        # # return {"content": content}
+
+
+def upload_to_imgur(path):
+    output = BytesIO()
+    im = Image.open(path)
+    im.save(output, format='JPEG')
+    im_data = output.getvalue()
+    base_64 = base64.b64encode(im_data)
+    os.remove(path)
+    url = 'https://api.imgur.com/3/image'
+    payload = {'image': base_64}
+    files = {}
+    headers = {
+    'Authorization': 'Client-ID b24245cb0505c2c'
+    }
+    response = requests.request('POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
+    print(response.text)
+    content = response.json()
+    url = content.get('data').get('link')
+    print(url)
+    return url
+
+# output = BytesIO()
+# im = Image.open('image.jpg')
+# im.save(output, format='JPEG')
+# im_data = output.getvalue()
+# e64 = base64.b64encode(im_data)
+# #print(e64)
+# url = 'https://api.imgur.com/3/image'
+# payload = {'image': e64}
+# files = {}
+# headers = {
+#     'Authorization': 'Client-ID b24245cb0505c2c'
+# }
+# response = requests.request(
+#     'POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
+# # print(response.json())
+
+# content = response.json()
+# url = content.get('data').get('link')
+# print(url)
+
+
 api.add_resource(Login, '/login')
 api.add_resource(Listing, '/listing')
 api.add_resource(Order, '/order')
@@ -722,6 +824,7 @@ api.add_resource(Profile, '/user')
 api.add_resource(UpdateUser, '/user/update')
 api.add_resource(BeneficiaryOrders, '/beneficiary/orders')
 api.add_resource(DonorOrders, '/donor/orders')
+api.add_resource(UploadImage, '/uploadimage')
 
 
 # /order -> orders of beneficiary. also add datestamp to the database.[done]

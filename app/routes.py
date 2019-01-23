@@ -442,16 +442,16 @@ class Order(Resource):
             beneficiary = Beneficiary.query.filter_by(
                 username=beneficiary_username).first()
             if not beneficiary:
-                return {'message': 'beneficiary not found', 'username': beneficiary_username}
+                return {'message': 'beneficiary not found', 'username': beneficiary_username, "error": 1}
 
             listing = Listings.query.get(order.get('listing_id'))
             quantity = orders[i].get('quantity')
             if quantity < 0:
-                return {'message': 'listing quantity less than 0'}
+                return {'message': 'listing quantity less than 0', "error": 1}
             print(quantity)
             listing.quantity -= int(quantity)
             if listing.quantity < 0:
-                return {'message': 'quantity more than stock'}
+                return {'message': 'quantity more than stock', "error": 1}
             o = Orders(donor=donor, beneficiary_id=beneficiary.id,
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
@@ -467,7 +467,7 @@ class Order(Resource):
         #            listing=listing, quantity=quantity, time_stamp=order.get('time_stamp'))
         # db.session.add(o)
         # db.session.commit()
-        return {"message": "Your order has been placed."}
+        return {"message": "Your order has been placed.", "error": 0}
 
 
 class DonorListings(Resource):
@@ -676,7 +676,7 @@ class BeneficiaryOrders(Resource):
         #address, url, description, organisation
         for order in orders:
             address = Address.query.filter_by(donor_id=order.donor_id).first()
-            donor = Donor.query.filter_by(id=order.donor_id)
+            donor = Donor.query.filter_by(id=order.donor_id).first()
             listing = Listings.query.get(order.listing_id)
             l = {
                 "donor_id": order.donor_id,

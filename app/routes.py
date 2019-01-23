@@ -121,7 +121,7 @@ def createdonor():
     print(donor)
     check_donor = Donor.query.filter_by(email=donor.get('email')).first()
     if check_donor:
-        return jsonify({'message': 'donor with that email already exists'})
+        return jsonify({'message': 'Donor with that email already exists!'})
     password_hash = bcrypt.generate_password_hash(
         donor.get('password')).decode('utf-8')
     username = donor.get('email').split('@')[0]
@@ -141,7 +141,7 @@ def createdonor():
     db.session.add(address)
     db.session.add(u)
     db.session.commit()
-    return jsonify({'message': 'donor added to database'})
+    return jsonify({'message': 'Donor added to database'})
 
 
 @app.route('/donors', methods=['GET'])
@@ -467,7 +467,7 @@ class Order(Resource):
         #            listing=listing, quantity=quantity, time_stamp=order.get('time_stamp'))
         # db.session.add(o)
         # db.session.commit()
-        return {"orders": "added"}
+        return {"message": "Your order has been placed."}
 
 
 class DonorListings(Resource):
@@ -732,7 +732,7 @@ class UploadImage(Resource):
     def post(self):
         # check if the post request has the file part
         if 'file' not in request.files:
-            return {"message": "no file send"}
+            return {"message": "No file sent"}
         file = request.files['file']
         # if user does not select file, browser also
         # submit an empty part without filename

@@ -676,6 +676,7 @@ class BeneficiaryOrders(Resource):
         #address, url, description, organisation
         for order in orders:
             address = Address.query.filter_by(donor_id=order.donor_id).first()
+            donor = Donor.query.filter_by(id=order.donor_id)
             listing = Listings.query.get(order.listing_id)
             l = {
                 "donor_id": order.donor_id,
@@ -688,7 +689,8 @@ class BeneficiaryOrders(Resource):
                 "city": address.city,
                 "country": address.country,
                 "image": listing.image,
-                "description": listing.description
+                "description": listing.description,
+                "organisation": donor.organisation
             }
             print(l)
             order_list.append(l)

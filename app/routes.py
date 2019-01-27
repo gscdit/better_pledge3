@@ -600,6 +600,7 @@ class DonorOrders(Resource):
                  "description": listing.description,
                  "organisation": donor.organisation}
             order_list.append(l)
+        order_list.reverse()
         return {"orders": order_list}
 
 

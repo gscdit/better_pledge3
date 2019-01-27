@@ -11,3 +11,4 @@ migrations
 app.db
 app/app.db
 *.db
+.env

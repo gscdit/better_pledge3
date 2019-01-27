@@ -1,7 +1,7 @@
 from app import app, db, bcrypt, api, admin
-from flask import jsonify, request, make_response
+from flask import jsonify, request
 from flask_admin.contrib.sqla import ModelView
-from flask_restful import Resource, reqparse
+from flask_restful import Resource
 from app.models import Donor, Address, Beneficiary, Listings, Orders, Reviews
 from functools import wraps
 from werkzeug.utils import secure_filename
@@ -22,7 +22,7 @@ admin.add_view(ModelView(Orders, db.session))
 admin.add_view(ModelView(Reviews, db.session))
 
 
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
 
 
 def allowed_file(filename):
@@ -30,7 +30,6 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# TODO: test this
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):

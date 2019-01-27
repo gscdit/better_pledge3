@@ -2,9 +2,8 @@ from app import app, db, bcrypt, api, admin
 from flask import jsonify, request, make_response
 from flask_admin.contrib.sqla import ModelView
 from flask_restful import Resource, reqparse
-from app.models import User, Donor, Address, Beneficiary, Listings, Orders, Reviews
+from app.models import Donor, Address, Beneficiary, Listings, Orders, Reviews
 from functools import wraps
-from flask import g
 from werkzeug.utils import secure_filename
 import os
 import jwt
@@ -15,7 +14,6 @@ from io import BytesIO
 import base64
 
 
-admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Donor, db.session))
 admin.add_view(ModelView(Address, db.session))
 admin.add_view(ModelView(Beneficiary, db.session))
@@ -26,22 +24,13 @@ admin.add_view(ModelView(Reviews, db.session))
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        if auth and auth.username == 'username' and auth.password == 'passwor':
-            return f(*args, **kwargs)
 
-        return make_response('Could not verify your login!', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-    return decorated
-
-
+# TODO: test this
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -54,9 +43,16 @@ def token_required(f):
 
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = Beneficiary.query.filter_by(
-                username=data['username']).first()
-        except:
+            type = data['type']
+            if type == 'donor':
+                donor = Donor.query.filter_by(
+                    username=data['username']).first()
+                print(donor.first_name)
+            elif type == 'beneficiary':
+                beneficiary = Beneficiary.query.filter_by(
+                    username=data['username']).first()
+                print(beneficiary.first_name)
+        except Exception:
             return {'message': 'Token is invalid!'}, 403
 
         return f(*args, **kwargs)
@@ -69,27 +65,6 @@ def home():
     return jsonify({'message': 'Welcome to the api'})
 
 
-@app.route('/createuser', methods=['POST'])
-def create():
-    user = request.json
-    print(user)
-    u = User(first_name=user.get('first_name'), info=user.get('info'))
-    db.session.add(u)
-    db.session.commit()
-    return jsonify({'message': 'user added to database'})
-
-
-@app.route('/users', methods=['GET'])
-# @token_required
-def users():
-    users = User.query.all()
-    users_list = []
-    for user in users:
-        d = {'first_name': user.first_name, 'info': user.info, 'id': user.id}
-        users_list.append(d)
-    return jsonify({'users': users_list})
-
-
 def username_in_database_donor(username):
     username = Donor.query.filter_by(username=username).first()
     return username
@@ -100,7 +75,6 @@ def username_in_database_beneficiary(username):
     return username
 
 
-# TODO: also add address support on all routes.
 @app.route('/donor', methods=['POST'])
 def createdonor():
     """
@@ -117,7 +91,9 @@ def createdonor():
     """
     donor = request.json
     if not donor:
-        return "not json"
+        return {"message": "not json"}, 400
+    if not donor.get("street"):
+        return {"message": "street not provided"}, 400
     print(donor)
     check_donor = Donor.query.filter_by(email=donor.get('email')).first()
     if check_donor:
@@ -128,20 +104,16 @@ def createdonor():
     check_username = username_in_database_donor(username)
     if check_username:
         while check_username:
-            username = username+'1'
+            username = username + '1'
             check_username = username_in_database_donor(username)
-    print(username)
     u = Donor(first_name=donor.get('first_name'), last_name=donor.get('last_name'), email=donor.get('email'), phone_no=donor.get('phone_no'), username=username,
               password_hash=password_hash, organisation=donor.get('organisation'))
-    # if donor.get('address'):
-    print(donor.get('hello'))
     address = Address(donor=u, city=donor.get('city'), street=donor.get(
         'street'), country=donor.get('country'), landmark=donor.get('landmark'))
-    print(address.city)
     db.session.add(address)
     db.session.add(u)
     db.session.commit()
-    return jsonify({'message': 'Donor added to database'})
+    return jsonify({'message': 'Donor added to database'}), 200
 
 
 @app.route('/donors', methods=['GET'])
@@ -164,7 +136,6 @@ def donors():
     donor_list = []
     for donor in donors:
         address = Address.query.filter_by(donor=donor).first()
-        print(address)
         if address:
             d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username, 'city': address.city, 'country': address.country,
@@ -173,7 +144,7 @@ def donors():
             d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username}
         donor_list.append(d)
-    return jsonify({'donors': donor_list})
+    return jsonify({'donors': donor_list}), 200
 
 
 @app.route('/beneficiaries', methods=['GET'])
@@ -196,7 +167,6 @@ def beneficiaries():
     beneficiaries_list = []
     for beneficiary in beneficiaries:
         address = Address.query.filter_by(beneficiary=beneficiary).first()
-        print(address)
         if address:
             d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username, 'city': address.city, 'country': address.country,
@@ -205,7 +175,7 @@ def beneficiaries():
             d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username}
         beneficiaries_list.append(d)
-    return jsonify({'beneficiaries': beneficiaries_list})
+    return jsonify({'beneficiaries': beneficiaries_list}), 200
 
 
 @app.route('/beneficiary', methods=['POST'])
@@ -223,11 +193,11 @@ def createbeneficiary():
     """
     beneficiary = request.json
     if not beneficiary:
-        return "not json"
-    print(beneficiary)
+        return "not json", 400
+    if not beneficiary.get("street"):
+        return {"message": "address street not provided"}, 400
     check_beneficiary = Beneficiary.query.filter_by(
         email=beneficiary.get('email')).first()
-    print(check_beneficiary)
     if check_beneficiary:
         return jsonify({'message': 'beneficiary with that email already exists'})
     password_hash = bcrypt.generate_password_hash(
@@ -236,24 +206,19 @@ def createbeneficiary():
     check_username = username_in_database_beneficiary(username)
     if check_username:
         while check_username:
-            username = username+'1'
+            username = username + '1'
             check_username = username_in_database_beneficiary(username)
-    print(username)
     u = Beneficiary(first_name=beneficiary.get('first_name'), last_name=beneficiary.get('last_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
                     password_hash=password_hash, type=1)
-    # if beneficiary.get('address'):
     address = Address(beneficiary=u, city=beneficiary.get(
         'city'), street=beneficiary.get('street'), country=beneficiary.get('country'), landmark=beneficiary.get('landmark'))
     db.session.add(address)
     db.session.add(u)
     db.session.commit()
-    return jsonify({'message': 'beneficiary added to database'})
+    return jsonify({'message': 'beneficiary added to database'}), 200
 
 
 class Login(Resource):
-    def get(self):
-        return {"hi": "testing"}
-
     def post(self):
         """
         @api {post} /login get jwt token 
@@ -268,7 +233,7 @@ class Login(Resource):
 
         user_data = request.json
         if not user_data:
-            return {"not": "json"}
+            return {"message": "not json"}, 400
         if user_data.get('type') == 'beneficiary':
             user = Beneficiary.query.filter_by(
                 email=user_data.get('email')).first()
@@ -283,7 +248,7 @@ class Login(Resource):
                 {'username': user.username, 'first_name': user.first_name, 'organisation': organisation, 'last_name': user.last_name, 'type': type, 'id': user.id,
                     'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
                 app.config['SECRET_KEY'])
-            return {'token': token.decode('UTF-8')}
+            return {'token': token.decode('UTF-8')}, 200
         else:
             return None
 
@@ -294,12 +259,11 @@ class Listing(Resource):
         if send_all == "0":
             listings = Listings.query.all()
             listing_list = []
-            # listing_dict = {}
             for listing in listings:
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
-                if listing.quantity == None:
+                if listing.quantity is None:
                     continue
                 if listing.quantity < 1:
                     continue
@@ -308,11 +272,10 @@ class Listing(Resource):
                      "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
                      "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
                 listing_list.append(l)
-            return {"listing": listing_list}
+            return {"listing": listing_list}, 200
 
         elif send_all == "1":
             listings = Listings.query.all()
-            # listing_list = []
             listing_dict = {}
             for listing in listings:
                 donor = Donor.query.get(listing.donor_id)
@@ -324,18 +287,9 @@ class Listing(Resource):
                                             "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                                             "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
                                             "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
-                # listing_list.append(l)
-        # print(listing_list)
-        # return {"listing": listing_list}
             return listing_dict
         else:
-            return {"message": "send_all not given"}, 403
-    #
-    # quantity = db.Column(db.Integer)
-    # expiry = db.Column(db.String(20))
-    # description = db.Column(db.String(250))
-    # type = db.Column(db.String(10))
-    # image = db.Column(db.String(100))
+            return {"message": "send_all not given"}, 400
 
     @token_required
     def post(self):
@@ -343,26 +297,21 @@ class Listing(Resource):
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         listing = request.json
         if not listing:
-            return {"not": "json"}
-        print(token_data.get('first_name'))
+            return {"message": "not json"}, 400
         donor = Donor.query.filter_by(
             username=token_data.get('username')).first()
-        print(listing)
-        print(donor.first_name)
-        print(donor.id)
         # print(donor.username, "xxx")
         l = Listings(quantity=listing.get('quantity'), expiry=listing.get('expiry'),
                      description=listing.get('description'), type=listing.get('type'),
                      image=listing.get('image'), donor_id=donor.id)
         db.session.add(l)
         db.session.commit()
-        return {"listing": "added"}
+        return {"message": "listing added"}, 200
 
 
 class Order(Resource):
     def get(self):
         orders = Orders.query.all()
-        print(orders)
         order_list = []
         for order in orders:
             l = {"donor_id": order.donor_id,
@@ -370,110 +319,45 @@ class Order(Resource):
                  "listing_id": order.lising_id,
                  "quantity": order.quantity,
                  "time_stamp": order.time_stamp}
-            print(l)
             order_list.append(l)
         print(order_list)
-        return {"orders": order_list}
-    #
-    # quantity = db.Column(db.Integer)
-    # expiry = db.Column(db.String(20))
-    # description = db.Column(db.String(250))
-    # type = db.Column(db.String(10))
-    # image = db.Column(db.String(100))
-
-# {	"time_stamp": "1324",
-#     "orders":[
-#     	 {
-#         "product":{
-#           "donor_id": 1,
-#           "listing_id": 3
-#         },
-#         "quantity": 3
-#       },
-
-#     	 {
-#         "product":{
-#           "donor_id": 1,
-#           "listing_id": 3
-#         },
-#         "quantity": 3
-#       }
-#     ]
-# }
-
-
-# {	"time_stamp": "1324",
-#     "orders":[
-#     	"",
-#     	{
-#         "product":{
-#           "donor_id": 1,
-#           "listing_id": 1
-#         },
-#         "quantity": 1
-#       },
-#       {
-#         "product":{
-#           "donor_id": 1,
-#           "listing_id": 2
-#         },
-#         "quantity": 1
-#       }
-# 	]
-# }
+        return {"orders": order_list}, 200
 
     @token_required
     def post(self):
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         json_data = request.json
-        print(json_data)
         if not json_data:
-            return {"not": "json"}
+            return {"message": "not json"}, 400
         orders = json_data.get('orders')
-        print(orders)
         for i in range(0, len(orders)):
             if orders[i] is None:
                 continue
             order = orders[i].get('product')
-            print(order)
             donor = Donor.query.get(order.get('donor_id'))
             beneficiary_username = token_data.get("username")
             beneficiary = Beneficiary.query.filter_by(
                 username=beneficiary_username).first()
             if not beneficiary:
-                return {'message': 'beneficiary not found', 'username': beneficiary_username, "error": 1}
+                return {'message': 'beneficiary not found', 'username': beneficiary_username, "error": 1}, 400
 
             listing = Listings.query.get(order.get('listing_id'))
             quantity = orders[i].get('quantity')
             if quantity < 0:
-                return {'message': 'listing quantity less than 0', "error": 1}
-            print(quantity)
+                return {'message': 'listing quantity less than 0', "error": 1}, 400
             listing.quantity -= int(quantity)
             if listing.quantity < 0:
-                return {'message': 'quantity more than stock', "error": 1}
+                return {'message': 'quantity more than stock', "error": 1}, 400
             o = Orders(donor=donor, beneficiary_id=beneficiary.id,
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
             db.session.commit()
 
-        # donor = Donor.query.get(order.get('donor_id'))
-        # beneficiary_username = token_data.get("username")
-        # beneficiary = Beneficiary.query.filter_by(
-        #     username=beneficiary_username).first()
-        # listing = Listings.query.get(order.get('listing_id'))
-        # listing.quantity -= quantity
-        # o = Orders(donor=donor, beneficiary=beneficiary,
-        #            listing=listing, quantity=quantity, time_stamp=order.get('time_stamp'))
-        # db.session.add(o)
-        # db.session.commit()
-        return {"message": "Your order has been placed.", "error": 0}
+        return {"message": "Your order has been placed.", "error": 0}, 200
 
 
 class DonorListings(Resource):
-    #    def post(self):
-    #        return {"testing": "donorlistings"}
-
     @token_required
     def get(self):
         token = request.headers.get("x-access-token")
@@ -492,7 +376,6 @@ class DonorListings(Resource):
 
         count = 0
         all_listings = []
-        print(listings)
         # giving structure
         for listings in parsed_listings:
             d[count] = listings
@@ -500,22 +383,20 @@ class DonorListings(Resource):
             all_listings.append(d)
             d = {}
             count = count + 1
-        print(all_listings)
-        print(jsonify(all_listings))
-        return {"listings": all_listings}
+        return {"listings": all_listings}, 200
 
 
 class SingleListing(Resource):
     def get(self):
         listing_id = request.args.get("listing_id")
         if not listing_id:
-            return {"listing_id": listing_id}
+            return {"listing_id": listing_id}, 400
         listing = Listings.query.get(listing_id)
         if not listing:
-            return {"no listing available": "with that listing_id"}
+            return {"message": "No listing available with that listing_id"}, 400
         return {"listing_id": listing.id,
                 "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}
+                "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}, 200
 
 
 class UpdateListing(Resource):
@@ -524,10 +405,10 @@ class UpdateListing(Resource):
         listing_id = request.args.get("listing_id")
         update_listing = request.json
         if not listing_id:
-            return {"listing_id": "not received"}
+            return {"message": "listing_id not received"}, 400
         listing = Listings.query.get(listing_id)
         if not listing:
-            return {"no listing available": "with that listing_id"}
+            return {"message": "no listing available with that listing_id"}, 400
         listing.quantity = update_listing.get("quantity")
         listing.description = update_listing.get("description")
         listing.expiry = update_listing.get("expiry")
@@ -535,7 +416,7 @@ class UpdateListing(Resource):
         listing.image = update_listing.get("image")
         listing.description = update_listing.get("description")
         db.session.commit()
-        return {"listing": "updated"}
+        return {"listing": "updated"}, 200
 
 
 class DeleteListing(Resource):
@@ -544,7 +425,7 @@ class DeleteListing(Resource):
     def post(self):
         listing_id = request.args.get("listing_id")
         if not listing_id:
-            return {"listing_id": listing_id}
+            return {"listing_id": listing_id}, 400
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
@@ -553,14 +434,12 @@ class DeleteListing(Resource):
         # Listings.query.filter_by(id=listing_id).delete()
         listing = Listings.query.filter_by(id=listing_id).first()
         if not listing:
-            return {"no listing available": "with that listing_id"}
+            return {"message": "no listing available with that listing_id"}, 400
         if listing not in donor_listings:
-            return {"permission": "denied"}
-        print(listing.description)
-        # db.session.delete(listing)
+            return {"message": "permission denied"}, 400
         listing.quantity = 0
         db.session.commit()
-        return {"listing": "deleted"}
+        return {"message": "listing deleted"}, 200
 
 
 class Profile(Resource):
@@ -583,10 +462,9 @@ class Profile(Resource):
                  'email': user.email, 'username': user.username, 'street': address.street, 'landmark': address.landmark,
                  'city': address.city, 'country': address.country}
 
-        return {'user': u}
+        return {'user': u}, 200
 
 
-# TODO: update address too
 class UpdateUser(Resource):
     @token_required
     def post(self):
@@ -603,17 +481,15 @@ class UpdateUser(Resource):
                 username=updated_user['username']).first()
             if check_username:
                 if check_username.id != user.id:
-                    return {'token': token, 'message': 0}
+                    return {'token': token, 'message': 0}, 400
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
             address = Address.query.filter_by(beneficiary_id=user.id).first()
             check_username = Beneficiary.query.filter_by(
                 username=updated_user['username']).first()
             if check_username.id != user.id:
-                return {'token': token, 'message': 0}
+                return {'token': token, 'message': 0}, 400
 
-        # u = {'name': user.name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
-        #      'email': user.email, 'username': user.username}
         address.street = updated_user.get('street')
         address.city = updated_user.get('city')
         address.landmark = updated_user.get('landmark')
@@ -627,10 +503,9 @@ class UpdateUser(Resource):
             {'username': user.username, 'first_name': user.first_name, 'type': type, 'id': user.id,
              'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
             app.config['SECRET_KEY'])
-        return {'token': token.decode('UTF-8'), 'message': 1}
+        return {'token': token.decode('UTF-8'), 'message': 1}, 200
 
 
-# class Order
 class BeneficiaryOrders(Resource):
     @token_required
     def get(self):
@@ -673,7 +548,6 @@ class BeneficiaryOrders(Resource):
         beneficiary = Beneficiary.query.filter_by(username=username).first()
         orders = Orders.query.filter_by(beneficiary_id=beneficiary.id)
         order_list = []
-        #address, url, description, organisation
         for order in orders:
             address = Address.query.filter_by(donor_id=order.donor_id).first()
             donor = Donor.query.filter_by(id=order.donor_id).first()
@@ -692,9 +566,7 @@ class BeneficiaryOrders(Resource):
                 "description": listing.description,
                 "organisation": donor.organisation
             }
-            print(l)
             order_list.append(l)
-        # print(order_list)
         order_list.reverse()
         return {"orders": order_list}
 
@@ -711,8 +583,13 @@ class DonorOrders(Resource):
         for order in orders:
             address = Address.query.filter_by(donor_id=order.donor_id).first()
             listing = Listings.query.get(order.listing_id)
+            beneficiary = Beneficiary.query.get(order.beneficiary_id)
             l = {"donor_id": order.donor_id,
                  "beneficiary_id": order.beneficiary_id,
+                 "first_name": beneficiary.first_name,
+                 "last_name": beneficiary.last_name,
+                 "email": beneficiary.email,
+                 "phone_no": beneficiary.phone_no,
                  "listing_id": order.listing_id,
                  "quantity": order.quantity,
                  "time_stamp": order.time_stamp,
@@ -723,9 +600,7 @@ class DonorOrders(Resource):
                  "image": listing.image,
                  "description": listing.description,
                  "organisation": donor.organisation}
-            print(l)
             order_list.append(l)
-        print(order_list)
         return {"orders": order_list}
 
 
@@ -734,44 +609,18 @@ class UploadImage(Resource):
     def post(self):
         # check if the post request has the file part
         if 'file' not in request.files:
-            return {"message": "No file sent"}
+            return {"message": "No file sent"}, 400
         file = request.files['file']
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == '':
-            return {'massage': 'No selected file'}
+            return {'massage': 'No selected file'}, 400
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             path = os.path.join(app.root_path, filename)
             file.save(path)
             url = upload_to_imgur(path)
-            return {"url": url}
-        # file.save(path)
-        # returnoutput = BytesIO()
-# im = Image.open('image.jpg')
-# im.save(output, format='JPEG')
-# im_data = output.getvalue()
-# e64 = base64.b64encode(im_data)
-# #print(e64)
-# url = 'https://api.imgur.com/3/image'
-# payload = {'image': e64}
-# files = {}
-# headers = {
-#     'Authorization': 'Client-ID b24245cb0505c2c'
-# }
-# response = requests.request(
-#     'POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
-# # print(response.json())
-
-# content = response.json()
-# url = content.get('data').get('link')
-# print(url)
-
-# {'message': 'hello'}
-        # content = request.headers.get('image')
-        # # content = request.json
-        # print(content)
-        # # return {"content": content}
+            return {"url": url}, 200
 
 
 def upload_to_imgur(path):
@@ -785,34 +634,13 @@ def upload_to_imgur(path):
     payload = {'image': base_64}
     files = {}
     headers = {
-    'Authorization': 'Client-ID b24245cb0505c2c'
+        'Authorization': 'Client-ID b24245cb0505c2c'
     }
-    response = requests.request('POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
-    print(response.text)
+    response = requests.request(
+        'POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
     content = response.json()
     url = content.get('data').get('link')
-    print(url)
     return url
-
-# output = BytesIO()
-# im = Image.open('image.jpg')
-# im.save(output, format='JPEG')
-# im_data = output.getvalue()
-# e64 = base64.b64encode(im_data)
-# #print(e64)
-# url = 'https://api.imgur.com/3/image'
-# payload = {'image': e64}
-# files = {}
-# headers = {
-#     'Authorization': 'Client-ID b24245cb0505c2c'
-# }
-# response = requests.request(
-#     'POST', url, headers=headers, data=payload, files=files, allow_redirects=False)
-# # print(response.json())
-
-# content = response.json()
-# url = content.get('data').get('link')
-# print(url)
 
 
 api.add_resource(Login, '/login')
@@ -829,9 +657,4 @@ api.add_resource(DonorOrders, '/donor/orders')
 api.add_resource(UploadImage, '/uploadimage')
 
 
-# /order -> orders of beneficiary. also add datestamp to the database.[done]
-# /check_out route -> delete the quantity. also remove the products which has zero quantity.[done]
-# remove those listings which have 0 quantity
-# add address support. also send it to products and my products.
-# add image api. image from front-end and return url.
 # notification to donor {later}

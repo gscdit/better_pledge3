@@ -5,6 +5,7 @@ from flask_restful import Resource
 from app.models import Donor, Address, Beneficiary, Listings, Orders, Reviews
 from functools import wraps
 from werkzeug.utils import secure_filename
+import sendgrid
 import os
 import jwt
 import datetime
@@ -12,6 +13,40 @@ import requests
 from PIL import Image
 from io import BytesIO
 import base64
+
+
+sg = sendgrid.SendGridAPIClient(apikey=app.config['SENDGRID_API_KEY'])
+
+
+def send_mail(to_email, donor, beneficiary, listing):
+    text = f"Hi {donor.first_name}, An order has been placed for your product of {listing.description} by "\
+           f"{beneficiary.first_name} {beneficiary.last_name}."
+    data = {
+                "personalizations": [
+                    {
+                    "to": [
+                        {
+                        "email": to_email
+                        }
+                    ],
+                    "subject": "Order placed for your product"
+                    }
+                ],
+                "from": {
+                    "email": app.config['SENDGRID_DEFAULT_FROM'], 
+                    "name": "BetterPledge"
+                },
+                "content": [
+                    {
+                        "type": "text/plain",
+                        "value": text
+                    }
+                ]
+            }
+    response = sg.client.mail.send.post(request_body=data)
+    print(response.status_code)
+    # print(response.body)
+    # print(response.headers)
 
 
 admin.add_view(ModelView(Donor, db.session))
@@ -29,7 +64,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
+# TODO: add type to models and verify
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -315,7 +350,7 @@ class Order(Resource):
         for order in orders:
             l = {"donor_id": order.donor_id,
                  "beneficiary_id": order.beneficiary_id,
-                 "listing_id": order.lising_id,
+                 "listing_id": order.listing_id,
                  "quantity": order.quantity,
                  "time_stamp": order.time_stamp}
             order_list.append(l)
@@ -352,7 +387,7 @@ class Order(Resource):
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
             db.session.commit()
-
+        send_mail(to_email=donor.email, donor=donor, beneficiary=beneficiary, listing=listing)
         return {"message": "Your order has been placed.", "error": 0}, 200
 
 

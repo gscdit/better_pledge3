@@ -387,7 +387,7 @@ class Order(Resource):
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
             db.session.commit()
-        send_mail(to_email=donor.email, donor=donor, beneficiary=beneficiary, listing=listing)
+            send_mail(to_email=donor.email, donor=donor, beneficiary=beneficiary, listing=listing)
         return {"message": "Your order has been placed.", "error": 0}, 200
 
 

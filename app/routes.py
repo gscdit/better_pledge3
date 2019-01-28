@@ -427,10 +427,14 @@ class SingleListing(Resource):
             return {"listing_id": listing_id}, 400
         listing = Listings.query.get(listing_id)
         if not listing:
+            return {"message": "no listing with that listing id"}, 400
+        donor = Donor.query.get(listing.donor_id)
+        address = Address.query.filter_by(donor_id=listing.donor_id).first()
+        if not listing:
             return {"message": "No listing available with that listing_id"}, 400
-        return {"listing_id": listing.id,
-                "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}, 200
+        return {"listing_id": listing.id, "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
+                "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
 
 
 class UpdateListing(Resource):

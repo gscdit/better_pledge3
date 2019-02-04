@@ -33,7 +33,7 @@ def send_mail(to_email, donor, beneficiary, listing):
                     }
                 ],
                 "from": {
-                    "email": app.config['SENDGRID_DEFAULT_FROM'], 
+                    "email": app.config['SENDGRID_DEFAULT_FROM'],
                     "name": "BetterPledge"
                 },
                 "content": [
@@ -65,6 +65,8 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # TODO: add type to models and verify
+
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -116,18 +118,29 @@ def createdonor():
     @apiVersion 1.0.0
     @apiName createdonor
     @apiGroup Donor
+
     @apiParam {String}      first_name      The first name of the Donor.
     @apiParam {String}      last_name       the last name of the Donor.
     @apiParam {String}      email           email of Donor.
-    @apiParam {String}      phone_no        phone number of Donor
-    @apiParam {String}      password        password of Donor
+    @apiParam {String}      phone_no        phone number of Donor.
+    @apiParam {String}      password        password of Donor.
+    @apiParam {String}      organisation    organisation of Donor.
+    @apiParam {String}      city            city name(part of address)
+    @apiParam {String}      street          street number(part of address)
+    @apiParam {String}      landmark        landmark description(part of address)
+    @apiParam {String}      country         country name(part of address)
+
     @apiSuccess {String}    message         donor added to database
+
+    @apiError               message         Donor with that email already exists!
+    @apiError               message         address street not provided
+    @apiError               message         not json
     """
     donor = request.json
     if not donor:
         return {"message": "not json"}, 400
     if not donor.get("street"):
-        return {"message": "street not provided"}, 400
+        return {"message": "address street not provided"}, 400
     print(donor)
     check_donor = Donor.query.filter_by(email=donor.get('email')).first()
     if check_donor:
@@ -158,20 +171,26 @@ def donors():
     @apiName donors
     @apiGroup Donor
     @apiDescription Display all donors
+
     @apiSuccess {Number}    id              The donors's id.
     @apiSuccess {String}    username        The donors's username.
     @apiSuccess {String}    first_name      The first name of the donor.
     @apiSuccess {String}    last_name       The last name of the donor.
-    @apiSuccess {String}    password_hash   password_hash of the user
-    @apiSuccess {Number}    email           email of donor
-    @apiSuccess {Number}    phone_no        phone_no of donor
+    @apiSuccess {Number}    email           email of donor.
+    @apiSuccess {Number}    phone_no        phone_no of donor.
+    @apiSuccess {Number}    city            city name.
+    @apiSuccess {Number}    street          street number/name.
+    @apiSuccess {Number}    landmark        landmark description.
+    @apiSuccess {Number}    country         country name.
+    @apiSuccess {Number}    organisation    organisation name.
+
     """
     donors = Donor.query.all()
     donor_list = []
     for donor in donors:
         address = Address.query.filter_by(donor=donor).first()
         if address:
-            d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'password_hash': donor.password_hash, 'id': donor.id, 'phone_no': donor.phone_no,
+            d = {'first_name': donor.first_name, 'last_name': donor.last_name, 'id': donor.id, 'phone_no': donor.phone_no,
                  'email': donor.email, 'username': donor.username, 'city': address.city, 'country': address.country,
                  'street': address.street, 'landmark': address.landmark, 'organisation': donor.organisation}
         else:
@@ -189,20 +208,25 @@ def beneficiaries():
     @apiName get_beneficiary
     @apiGroup Beneficiary
     @apiDescription Display all beneficiaries
+
     @apiSuccess {Number}    id              The beneficiary's id.
     @apiSuccess {String}    username        The beneficiary's username.
     @apiSuccess {String}    first_name      The first name of the beneficiary.
     @apiSuccess {String}    last_name       The last name of the beneficiary.
-    @apiSuccess {String}    password_hash   password_hash of the beneficiary
     @apiSuccess {Number}    email           email of beneficiary
     @apiSuccess {Number}    phone_no        phone_no of beneficiary
-    """
+    @apiSuccess {Number}    city            city name.
+    @apiSuccess {Number}    street          street number/name.
+    @apiSuccess {Number}    landmark        landmark description.
+    @apiSuccess {Number}    country         country name.
+   """
+
     beneficiaries = Beneficiary.query.all()
     beneficiaries_list = []
     for beneficiary in beneficiaries:
         address = Address.query.filter_by(beneficiary=beneficiary).first()
         if address:
-            d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
+            d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
                  'email': beneficiary.email, 'username': beneficiary.username, 'city': address.city, 'country': address.country,
                  'street': address.street, 'landmark': address.landmark}
         else:
@@ -219,15 +243,26 @@ def createbeneficiary():
     @apiVersion 1.0.0
     @apiName createbeneficiary
     @apiGroup Beneficiary
+
     @apiParam {String}      first_name      The first name of the Beneficiary.
     @apiParam {String}      last_name       the last name of the Beneficiary.
     @apiParam {String}      email           email of Beneficiary.
     @apiParam {String}      phone_no        phone number of Beneficiary
     @apiParam {String}      password        password of Beneficiary
+    @apiParam {String}      city            city name(part of address)
+    @apiParam {String}      street          street number(part of address)
+    @apiParam {String}      landmark        landmark description(part of address)
+    @apiParam {String}      country         country name(part of address)
+
+    @apiSuccess {String}    message         beneficiary added to database
+
+    @apiError               message         beneficiary with that email already exists
+    @apiError               message         address street not provided
+    @apiError               message         not json
     """
     beneficiary = request.json
     if not beneficiary:
-        return "not json", 400
+        return {"message": "not json"}, 400
     if not beneficiary.get("street"):
         return {"message": "address street not provided"}, 400
     check_beneficiary = Beneficiary.query.filter_by(
@@ -255,14 +290,18 @@ def createbeneficiary():
 class Login(Resource):
     def post(self):
         """
-        @api {post} /login get jwt token 
+        @api {post} /login get jwt token
         @apiVersion 1.0.0
         @apiName Login
         @apiGroup Login
-        @apiParam {String}      type            if user is 'donor' or 'beneficiary'
+
+        @apiParam {String}      type            'donor' or 'beneficiary'
         @apiParam {Object}      email           email of user
-        @apiParam {Object}      password        password of user   
+        @apiParam {Object}      password        password of user
+
         @apiSuccess {Number}    token           jwt token
+
+        @apiError               message         not json
         """
 
         user_data = request.json
@@ -289,6 +328,27 @@ class Login(Resource):
 
 class Listing(Resource):
     def get(self):
+        """
+        @api {get} /beneficiaries Display all beneficiaries
+        @apiVersion 1.0.0
+        @apiName get_beneficiary
+        @apiGroup Beneficiary
+        @apiDescription Display all beneficiaries
+
+        @apiSuccess {Number}    listing_id      id of the listing.
+        @apiSuccess {String}    quantity        listing quantity
+        @apiSuccess {String}    description     listing description.
+        @apiSuccess {String}    type            'veg' or 'non-veg'
+        @apiSuccess {String}    image           image url
+        @apiSuccess {String}    donor_id        id of donor
+        @apiSuccess {String}    street          street number/name of donor
+        @apiSuccess {String}    landmark        landmark description of donor address
+        @apiSuccess {String}    city            city name of donor
+        @apiSuccess {String}    country         country name of donor.
+        @apiSuccess {String}    organisation    organisation name of donor
+
+        @apiError               message         send_all not given
+        """
         send_all = request.args.get("send_all")
         if send_all == "0":
             listings = Listings.query.all()
@@ -327,6 +387,21 @@ class Listing(Resource):
 
     @token_required
     def post(self):
+        """
+        @api {post} /beneficiary Add a new beneficiary
+        @apiVersion 1.0.0
+        @apiName createbeneficiary
+        @apiGroup Beneficiary
+
+        @apiParam {String}      quantity        quantity of the listing
+        @apiParam {String}      description     description of the listing.
+        @apiParam {String}      image           image url
+        @apiParam {String}      type            'veg' or 'non veg'
+
+        @apiSuccess {String}    message         listing added
+
+        @apiError               message         not json
+        """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         listing = request.json
@@ -345,6 +420,21 @@ class Listing(Resource):
 
 class Order(Resource):
     def get(self):
+        """
+        @api {get} /beneficiaries Display all beneficiaries
+        @apiVersion 1.0.0
+        @apiName get_beneficiary
+        @apiGroup Beneficiary
+        @apiDescription Display all beneficiaries
+
+        @apiSuccess {Number}    donor_id        id of donor.
+        @apiSuccess {Number}    beneficiary_id  id of beneficiary.
+        @apiSuccess {Number}    listing_id      id of listing.
+        @apiSuccess {Number}    quantity        quantity of order.
+        @apiSuccess {Number}    time_stamp      time stamp of order palcement.
+
+        @apiError               message         send_all not given
+        """
         orders = Orders.query.all()
         order_list = []
         for order in orders:
@@ -359,6 +449,26 @@ class Order(Resource):
 
     @token_required
     def post(self):
+        """
+        @api {post} /beneficiary Add a new beneficiary
+        @apiVersion 1.0.0
+        @apiName createbeneficiary
+        @apiGroup Beneficiary
+
+        @apiParam {String}      timestamp           time stamp of order placement
+        @apiParam {Object[]}    orders              List of orders placed(Array of Objects)
+        @apiParam {Number}      orders.product      order id
+        @apiParam {Number}      orders.donor_id     donor id
+        @apiParam {Number}      orders.listing_id   listing id
+        @apiParam {Number}      orders.quantity     quantity of order.
+
+        @apiSuccess {String}    message         Your order has been placed.
+
+        @apiError               message         not json
+        @apiError               message         beneficiary not found
+        @apiError               message         listing quantity less than 0
+        @apiError               message         quantity more than stock
+        """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         json_data = request.json
@@ -387,13 +497,31 @@ class Order(Resource):
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
             db.session.commit()
-            send_mail(to_email=donor.email, donor=donor, beneficiary=beneficiary, listing=listing)
+            send_mail(to_email=donor.email, donor=donor,
+                      beneficiary=beneficiary, listing=listing)
         return {"message": "Your order has been placed.", "error": 0}, 200
 
 
 class DonorListings(Resource):
     @token_required
     def get(self):
+        """
+        @api {get} /beneficiaries Display all beneficiaries
+        @apiVersion 1.0.0
+        @apiName get_beneficiary
+        @apiGroup Beneficiary
+        @apiDescription Display all beneficiaries
+
+        @apiSuccess {Object[]}  listings                 All listing of donor(Array of Objects)
+        @apiSuccess {Number}    listings.listing_id      id of listing
+        @apiSuccess {Number}    listings.quantity        quantity of listing
+        @apiSuccess {Number}    listings.donor_id        id of donor
+        @apiSuccess {String}    listings.description     description of listing
+        @apiSuccess {String}    listings.type            'veg' or 'non-veg'
+        @apiSuccess {String}    listings.image           image url
+
+        @apiError               message         send_all not given
+        """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
@@ -422,6 +550,27 @@ class DonorListings(Resource):
 
 class SingleListing(Resource):
     def get(self):
+        """
+        @api {get} /beneficiaries Display all beneficiaries
+        @apiVersion 1.0.0
+        @apiName get_beneficiary
+        @apiGroup Beneficiary
+        @apiDescription Display all beneficiaries
+
+        @apiSuccess {Number}    listing_id      id of listing
+        @apiSuccess {Number}    quantity        quantity of listing
+        @apiSuccess {Number}    donor_id        id of donor
+        @apiSuccess {String}    description     description of listing
+        @apiSuccess {String}    type            'veg' or 'non-veg'
+        @apiSuccess {String}    image           image url
+        @apiSuccess {String}    street          street number/name of donor.
+        @apiSuccess {String}    landmark        landmark description of donor.
+        @apiSuccess {String}    city            city of donor.
+        @apiSuccess {String}    country         country of donor.
+        @apiSuccess {String}    organisation    organisation of donor.
+
+        @apiError               message         send_all not given
+        """
         listing_id = request.args.get("listing_id")
         if not listing_id:
             return {"listing_id": listing_id}, 400
@@ -439,11 +588,26 @@ class SingleListing(Resource):
 
 class UpdateListing(Resource):
     def post(self):
-        # don't know why headers is not working on deployed version. will probably look later.
+        """
+        @api {post} /beneficiary update listing
+        @apiVersion 1.0.0
+        @apiName updatelisting
+        @apiGroup Listing
+
+        @apiParam {Number}      quantity        quantity of listing.
+        @apiParam {String}      description     description of listing.
+        @apiParam {String}      type            'veg' or 'non-veg'
+        @apiParam {String}      image           image url
+
+        @apiSuccess {String}    message         listing updated
+
+        @apiError               message         listing_id not provided
+        @apiError               message         no listing available with that listing_id
+        """
         listing_id = request.args.get("listing_id")
         update_listing = request.json
         if not listing_id:
-            return {"message": "listing_id not received"}, 400
+            return {"message": "listing_id not provided"}, 400
         listing = Listings.query.get(listing_id)
         if not listing:
             return {"message": "no listing available with that listing_id"}, 400
@@ -452,18 +616,31 @@ class UpdateListing(Resource):
         listing.expiry = update_listing.get("expiry")
         listing.type = update_listing.get("type")
         listing.image = update_listing.get("image")
-        listing.description = update_listing.get("description")
         db.session.commit()
-        return {"listing": "updated"}, 200
+        return {"message": "listing updated"}, 200
 
 
 class DeleteListing(Resource):
     # very prone to exploitation. anyone can delete anything.
     @token_required
     def post(self):
+        """
+        @api {post} /beneficiary delete listing
+        @apiVersion 1.0.0
+        @apiName deletelisting
+        @apiGroup Listing
+
+        @apiParam {Number}      listing_id      listing id (in args)
+
+        @apiSuccess {String}    message         listing deleted
+
+        @apiError               message         no listing_id sent in args
+        @apiError               message         no listing available with that listing_id
+        @apiError               message         permission denied
+        """
         listing_id = request.args.get("listing_id")
         if not listing_id:
-            return {"listing_id": listing_id}, 400
+            return {"message": "no listing_id sent in args"}, 400
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
@@ -483,6 +660,27 @@ class DeleteListing(Resource):
 class Profile(Resource):
     @token_required
     def get(self):
+        """
+        @api {get} /beneficiaries details of user
+        @apiVersion 1.0.0
+        @apiName profile
+        @apiGroup User
+        @apiDescription details of user
+
+        @apiParam   {String}    type            'donor' or 'beneficiary'
+
+        @apiSuccess {Object}    user                 Object with user info.
+        @apiSuccess {String}    user.first_name      first name of user
+        @apiSuccess {String}    user.last_name       last name of user
+        @apiSuccess {String}    user.email           email of user
+        @apiSuccess {String}    user.username        username of user
+        @apiSuccess {String}    user.organisation    organisation of user(only for donor)
+        @apiSuccess {String}    user.street          street number/name of user.
+        @apiSuccess {String}    user.landmark        landmark description of user.
+        @apiSuccess {String}    user.city            city of user.
+        @apiSuccess {String}    user.country         country of user.
+
+        """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         type = token_data.get('type')
@@ -490,13 +688,13 @@ class Profile(Resource):
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
             address = Address.query.filter_by(donor_id=user.id).first()
-            u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
+            u = {'first_name': user.first_name, 'last_name': user.last_name,'id': user.id, 'phone_no': user.phone_no,
                  'email': user.email, 'username': user.username, 'organisation': user.organisation, 'street': address.street, 'landmark': address.landmark,
                  'city': address.city, 'country': address.country}
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
             address = Address.query.filter_by(beneficiary_id=user.id).first()
-            u = {'first_name': user.first_name, 'last_name': user.last_name, 'password_hash': user.password_hash, 'id': user.id, 'phone_no': user.phone_no,
+            u = {'first_name': user.first_name, 'last_name': user.last_name, 'id': user.id, 'phone_no': user.phone_no,
                  'email': user.email, 'username': user.username, 'street': address.street, 'landmark': address.landmark,
                  'city': address.city, 'country': address.country}
 
@@ -506,6 +704,27 @@ class Profile(Resource):
 class UpdateUser(Resource):
     @token_required
     def post(self):
+        """
+        @api {post} /beneficiary update user
+        @apiVersion 1.0.0
+        @apiName updateuser
+        @apiGroup User
+
+
+        @apiParam {String}      type            'donor' or 'beneficiary'
+        @apiParam {String}      first_name      The first name of the user.
+        @apiParam {String}      last_name       the last name of the user.
+        @apiParam {String}      username        username of user.
+        @apiParam {String}      phone_no        phone number of user.
+        @apiParam {String}      organisation    organisation of Donor(for donor only)
+        @apiParam {String}      city            city name(part of address)
+        @apiParam {String}      street          street number(part of address)
+        @apiParam {String}      landmark        landmark description(part of address)
+        @apiParam {String}      country         country name(part of address)
+
+        @apiSuccess {String}    token           updated token
+
+        """
         updated_user = request.json
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -548,37 +767,25 @@ class BeneficiaryOrders(Resource):
     @token_required
     def get(self):
         """
-        @api {get} /beneficiary/orders Display all orders of beneficiary
+        @api {get} /beneficiaries get all orders of beneficiary
         @apiVersion 1.0.0
         @apiName beneficiaryorders
         @apiGroup Beneficiary
+        @apiDescription get all orders of beneficary
 
-        @apiSuccess {Integer} donor_id           donor id
-        @apiSuccess {Integer} beneficiary_id     beneficiary id
-        @apiSuccess {Integer} listing_id         listing id
-        @apiSuccess {String} quantity            quantity of listing.
-        @apiSuccess {String} time_stamp          time stamp.
-        @apiSuccess {String} street              street(address)
-        @apiSuccess {String} landmark            landmark(address)
-        @apiSuccess {String} city                city(address)
-        @apiSuccess {String} country             country(address)
-        @apiSuccess {String} image               image url
-        @apiSuccess {String} description         description of listing
+        @apiSuccess {Object[]}  orders                 array of beneficiary orders
+        @apiSuccess {Number}    orders.donor_id        id of donor
+        @apiSuccess {Number}    orders.listing_id      id of listing
+        @apiSuccess {Number}    orders.beneficiary_id  id of beneficiary
+        @apiSuccess {String}    orders.street          street number/name of donor.
+        @apiSuccess {String}    orders.landmark        landmark description of donor.
+        @apiSuccess {String}    orders.city            city of donor.
+        @apiSuccess {String}    orders.country         country of donor.
+        @apiSuccess {String}    orders.image           image of listing
+        @apiSuccess {String}    orders.description     description of listing
+        @apiSuccess {String}    orders.organisation    organisation of donor
+        @apiSuccess {Number}    orders.time_stamp      time stamp of order placement
 
-        @apiSuccessExample Success-Response:
-            HTTP/1.1 200 OK
-            {
-                "firstname": "John",
-                "lastname": "Doe"
-            }
-
-        @apiError UserNotFound The id of the User was not found.
-
-        @apiErrorExample Error-Response:
-            HTTP/1.1 404 Not Found
-            {
-                "error": "UserNotFound"
-            }
         """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -612,6 +819,33 @@ class BeneficiaryOrders(Resource):
 class DonorOrders(Resource):
     @token_required
     def get(self):
+        """
+        @api {get} /beneficiaries get all orders of donor
+        @apiVersion 1.0.0
+        @apiName donororders
+        @apiGroup Donor
+        @apiDescription get all orders of donor
+
+
+        @apiSuccess {Object[]}  orders                 array of donor orders
+        @apiSuccess {Number}    orders.donor_id        id of donor
+        @apiSuccess {Number}    orders.listing_id      id of listing
+        @apiSuccess {Number}    orders.beneficiary_id  id of beneficiary
+        @apiSuccess {String}    orders.first_name      first name of beneficiary
+        @apiSuccess {String}    orders.last_name       last name of beneficiary
+        @apiSuccess {String}    orders.email           email of beneficiary
+        @apiSuccess {String}    orders.username        username of beneficiary
+        @apiSuccess {String}    orders.phone_no        phone number of beneficiary
+        @apiSuccess {String}    orders.street          street number/name of donor.
+        @apiSuccess {String}    orders.landmark        landmark description of donor.
+        @apiSuccess {String}    orders.city            city of donor.
+        @apiSuccess {String}    orders.country         country of donor.
+        @apiSuccess {String}    orders.image           image of listing
+        @apiSuccess {String}    orders.description     description of listing
+        @apiSuccess {String}    orders.organisation    organisation of donor
+        @apiSuccess {Number}    orders.time_stamp      time stamp of order placement
+
+        """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
         username = token_data.get("username")
@@ -646,6 +880,19 @@ class DonorOrders(Resource):
 # randomize the image filename
 class UploadImage(Resource):
     def post(self):
+        """
+        @api {post} /beneficiary upload image to imgur
+        @apiVersion 1.0.0
+        @apiName uploadimage
+        @apiGroup Listing
+
+        @apiParam {Bytes}       file            file object.
+
+        @apiSuccess {String}    url             image url
+
+        @apiError               message         No file sent
+        @apiError               message         No selected file
+        """
         # check if the post request has the file part
         if 'file' not in request.files:
             return {"message": "No file sent"}, 400

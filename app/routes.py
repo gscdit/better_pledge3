@@ -75,7 +75,7 @@ def token_required(f):
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
         if not token:
-            return {'message': 'Token is missing!'}, 403
+            return {'message': 'Token is missing'}, 403
 
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -89,7 +89,7 @@ def token_required(f):
                     username=data['username']).first()
                 print(beneficiary.first_name)
         except Exception:
-            return {'message': 'Token is invalid!'}, 403
+            return {'message': 'Token is invalid'}, 403
 
         return f(*args, **kwargs)
 
@@ -114,7 +114,7 @@ def username_in_database_beneficiary(username):
 @app.route('/donor', methods=['POST'])
 def createdonor():
     """
-    @api {post} /donor add a new donor
+    @api {post} /donor Add a new donor
     @apiVersion 1.0.0
     @apiName createdonor
     @apiGroup Donor
@@ -133,8 +133,8 @@ def createdonor():
     @apiSuccess {String}    message         donor added to database
 
     @apiError               message         Donor with that email already exists!
-    @apiError               message         address street not provided
-    @apiError               message         not json
+    @apiError               message[2]         address street not provided
+    @apiError               message[3]         not json
     """
     donor = request.json
     if not donor:
@@ -166,23 +166,23 @@ def createdonor():
 @app.route('/donors', methods=['GET'])
 def donors():
     """
-    @api {get} /donors Display all donors
+    @api {get} /donors get all donors
     @apiVersion 1.0.0
     @apiName donors
     @apiGroup Donor
-    @apiDescription Display all donors
 
-    @apiSuccess {Number}    id              The donors's id.
-    @apiSuccess {String}    username        The donors's username.
-    @apiSuccess {String}    first_name      The first name of the donor.
-    @apiSuccess {String}    last_name       The last name of the donor.
-    @apiSuccess {Number}    email           email of donor.
-    @apiSuccess {Number}    phone_no        phone_no of donor.
-    @apiSuccess {Number}    city            city name.
-    @apiSuccess {Number}    street          street number/name.
-    @apiSuccess {Number}    landmark        landmark description.
-    @apiSuccess {Number}    country         country name.
-    @apiSuccess {Number}    organisation    organisation name.
+    @apiSuccess {Object[]}  donors                 Array of donor objects.
+    @apiSuccess {Number}    donors.id              The donors's id.
+    @apiSuccess {String}    donors.username        The donors's username.
+    @apiSuccess {String}    donors.first_name      The first name of the donor.
+    @apiSuccess {String}    donors.last_name       The last name of the donor.
+    @apiSuccess {Number}    donors.email           email of donor.
+    @apiSuccess {Number}    donors.phone_no        phone_no of donor.
+    @apiSuccess {Number}    donors.city            city name.
+    @apiSuccess {Number}    donors.street          street number/name.
+    @apiSuccess {Number}    donors.landmark        landmark description.
+    @apiSuccess {Number}    donors.country         country name.
+    @apiSuccess {Number}    donors.organisation    organisation name.
 
     """
     donors = Donor.query.all()
@@ -203,23 +203,23 @@ def donors():
 @app.route('/beneficiaries', methods=['GET'])
 def beneficiaries():
     """
-    @api {get} /beneficiaries Display all beneficiaries
+    @api {get} /beneficiaries get all beneficiaries
     @apiVersion 1.0.0
-    @apiName get_beneficiary
+    @apiName beneficiaries
     @apiGroup Beneficiary
-    @apiDescription Display all beneficiaries
 
-    @apiSuccess {Number}    id              The beneficiary's id.
-    @apiSuccess {String}    username        The beneficiary's username.
-    @apiSuccess {String}    first_name      The first name of the beneficiary.
-    @apiSuccess {String}    last_name       The last name of the beneficiary.
-    @apiSuccess {Number}    email           email of beneficiary
-    @apiSuccess {Number}    phone_no        phone_no of beneficiary
-    @apiSuccess {Number}    city            city name.
-    @apiSuccess {Number}    street          street number/name.
-    @apiSuccess {Number}    landmark        landmark description.
-    @apiSuccess {Number}    country         country name.
-   """
+    @apiSuccess {Object[]}  beneficiaries                 Array of beneficiary objects.
+    @apiSuccess {Number}    beneficiaries.id              The beneficiary's id.
+    @apiSuccess {String}    beneficiaries.username        The beneficiary's username.
+    @apiSuccess {String}    beneficiaries.first_name      The first name of the beneficiary.
+    @apiSuccess {String}    beneficiaries.last_name       The last name of the beneficiary.
+    @apiSuccess {Number}    beneficiaries.email           email of beneficiary
+    @apiSuccess {Number}    beneficiaries.phone_no        phone_no of beneficiary
+    @apiSuccess {Number}    beneficiaries.city            city name.
+    @apiSuccess {Number}    beneficiaries.street          street number/name.
+    @apiSuccess {Number}    beneficiaries.landmark        landmark description.
+    @apiSuccess {Number}    beneficiaries.country         country name.
+    """
 
     beneficiaries = Beneficiary.query.all()
     beneficiaries_list = []
@@ -257,8 +257,8 @@ def createbeneficiary():
     @apiSuccess {String}    message         beneficiary added to database
 
     @apiError               message         beneficiary with that email already exists
-    @apiError               message         address street not provided
-    @apiError               message         not json
+    @apiError               message[2]         address street not provided
+    @apiError               message[3]         not json
     """
     beneficiary = request.json
     if not beneficiary:
@@ -329,11 +329,10 @@ class Login(Resource):
 class Listing(Resource):
     def get(self):
         """
-        @api {get} /beneficiaries Display all beneficiaries
+        @api {get} /listing get all listing
         @apiVersion 1.0.0
-        @apiName get_beneficiary
-        @apiGroup Beneficiary
-        @apiDescription Display all beneficiaries
+        @apiName listing_get
+        @apiGroup Listing
 
         @apiSuccess {Number}    listing_id      id of the listing.
         @apiSuccess {String}    quantity        listing quantity
@@ -388,10 +387,10 @@ class Listing(Resource):
     @token_required
     def post(self):
         """
-        @api {post} /beneficiary Add a new beneficiary
+        @api {post} /listing Add a new listing
         @apiVersion 1.0.0
-        @apiName createbeneficiary
-        @apiGroup Beneficiary
+        @apiName listing_post
+        @apiGroup Listing
 
         @apiParam {String}      quantity        quantity of the listing
         @apiParam {String}      description     description of the listing.
@@ -401,6 +400,8 @@ class Listing(Resource):
         @apiSuccess {String}    message         listing added
 
         @apiError               message         not json
+        @apiError               message[2]         token is missing
+        @apiError               message[3]         token is invalid
         """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -421,19 +422,16 @@ class Listing(Resource):
 class Order(Resource):
     def get(self):
         """
-        @api {get} /beneficiaries Display all beneficiaries
+        @api {get} /order get all orders
         @apiVersion 1.0.0
-        @apiName get_beneficiary
-        @apiGroup Beneficiary
-        @apiDescription Display all beneficiaries
+        @apiName order_get
+        @apiGroup Order
 
         @apiSuccess {Number}    donor_id        id of donor.
         @apiSuccess {Number}    beneficiary_id  id of beneficiary.
         @apiSuccess {Number}    listing_id      id of listing.
         @apiSuccess {Number}    quantity        quantity of order.
         @apiSuccess {Number}    time_stamp      time stamp of order palcement.
-
-        @apiError               message         send_all not given
         """
         orders = Orders.query.all()
         order_list = []
@@ -450,10 +448,10 @@ class Order(Resource):
     @token_required
     def post(self):
         """
-        @api {post} /beneficiary Add a new beneficiary
+        @api {post} /order Add a new order
         @apiVersion 1.0.0
-        @apiName createbeneficiary
-        @apiGroup Beneficiary
+        @apiName order_post
+        @apiGroup Order
 
         @apiParam {String}      timestamp           time stamp of order placement
         @apiParam {Object[]}    orders              List of orders placed(Array of Objects)
@@ -465,9 +463,11 @@ class Order(Resource):
         @apiSuccess {String}    message         Your order has been placed.
 
         @apiError               message         not json
-        @apiError               message         beneficiary not found
-        @apiError               message         listing quantity less than 0
-        @apiError               message         quantity more than stock
+        @apiError               message[2]         beneficiary not found
+        @apiError               message[3]         listing quantity less than 0
+        @apiError               message[4]         quantity more than stock
+        @apiError               message[5]         token is missing
+        @apiError               message[6]         token is invalid
         """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -506,11 +506,10 @@ class DonorListings(Resource):
     @token_required
     def get(self):
         """
-        @api {get} /beneficiaries Display all beneficiaries
+        @api {get} /donorlistings get all listings of donor
         @apiVersion 1.0.0
-        @apiName get_beneficiary
-        @apiGroup Beneficiary
-        @apiDescription Display all beneficiaries
+        @apiName donorlisting
+        @apiGroup Listing
 
         @apiSuccess {Object[]}  listings                 All listing of donor(Array of Objects)
         @apiSuccess {Number}    listings.listing_id      id of listing
@@ -520,7 +519,8 @@ class DonorListings(Resource):
         @apiSuccess {String}    listings.type            'veg' or 'non-veg'
         @apiSuccess {String}    listings.image           image url
 
-        @apiError               message         send_all not given
+        @apiError               message         token is missing
+        @apiError               message[2]         token is invalid
         """
         token = request.headers.get("x-access-token")
         token_data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -551,11 +551,12 @@ class DonorListings(Resource):
 class SingleListing(Resource):
     def get(self):
         """
-        @api {get} /beneficiaries Display all beneficiaries
+        @api {get} /singlelisting get single listing
         @apiVersion 1.0.0
-        @apiName get_beneficiary
-        @apiGroup Beneficiary
-        @apiDescription Display all beneficiaries
+        @apiName singlelisting
+        @apiGroup Listing
+
+        @apiParam {Number}      listing_id      id of listing(in args)
 
         @apiSuccess {Number}    listing_id      id of listing
         @apiSuccess {Number}    quantity        quantity of listing
@@ -569,18 +570,17 @@ class SingleListing(Resource):
         @apiSuccess {String}    country         country of donor.
         @apiSuccess {String}    organisation    organisation of donor.
 
-        @apiError               message         send_all not given
+        @apiError               message         no listing with that listing id
+        @apiError               message[2]         no listing available with that listing_id
         """
         listing_id = request.args.get("listing_id")
         if not listing_id:
             return {"listing_id": listing_id}, 400
         listing = Listings.query.get(listing_id)
         if not listing:
-            return {"message": "no listing with that listing id"}, 400
+            return {"message": "No listing available with that listing_id"}, 400
         donor = Donor.query.get(listing.donor_id)
         address = Address.query.filter_by(donor_id=listing.donor_id).first()
-        if not listing:
-            return {"message": "No listing available with that listing_id"}, 400
         return {"listing_id": listing.id, "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                 "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
                 "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
@@ -589,7 +589,7 @@ class SingleListing(Resource):
 class UpdateListing(Resource):
     def post(self):
         """
-        @api {post} /beneficiary update listing
+        @api {post} /updatelisting update listing info
         @apiVersion 1.0.0
         @apiName updatelisting
         @apiGroup Listing
@@ -602,7 +602,7 @@ class UpdateListing(Resource):
         @apiSuccess {String}    message         listing updated
 
         @apiError               message         listing_id not provided
-        @apiError               message         no listing available with that listing_id
+        @apiError               message[2]         no listing available with that listing_id
         """
         listing_id = request.args.get("listing_id")
         update_listing = request.json
@@ -625,7 +625,7 @@ class DeleteListing(Resource):
     @token_required
     def post(self):
         """
-        @api {post} /beneficiary delete listing
+        @api {post} /deletelisting delete listing
         @apiVersion 1.0.0
         @apiName deletelisting
         @apiGroup Listing
@@ -635,8 +635,11 @@ class DeleteListing(Resource):
         @apiSuccess {String}    message         listing deleted
 
         @apiError               message         no listing_id sent in args
-        @apiError               message         no listing available with that listing_id
-        @apiError               message         permission denied
+        @apiError               message[2]         no listing available with that listing_id
+        @apiError               message[3]         permission denied
+        @apiError               message[4]         token is missing
+        @apiError               message[5]         token is invalid
+
         """
         listing_id = request.args.get("listing_id")
         if not listing_id:
@@ -661,11 +664,10 @@ class Profile(Resource):
     @token_required
     def get(self):
         """
-        @api {get} /beneficiaries details of user
+        @api {get} /user get details of user
         @apiVersion 1.0.0
         @apiName profile
         @apiGroup User
-        @apiDescription details of user
 
         @apiParam   {String}    type            'donor' or 'beneficiary'
 
@@ -679,6 +681,9 @@ class Profile(Resource):
         @apiSuccess {String}    user.landmark        landmark description of user.
         @apiSuccess {String}    user.city            city of user.
         @apiSuccess {String}    user.country         country of user.
+
+        @apiError               message         token is missing
+        @apiError               message[2]         token is invalid
 
         """
         token = request.headers.get("x-access-token")
@@ -705,7 +710,7 @@ class UpdateUser(Resource):
     @token_required
     def post(self):
         """
-        @api {post} /beneficiary update user
+        @api {post} /user/update update user
         @apiVersion 1.0.0
         @apiName updateuser
         @apiGroup User
@@ -723,6 +728,9 @@ class UpdateUser(Resource):
         @apiParam {String}      country         country name(part of address)
 
         @apiSuccess {String}    token           updated token
+
+        @apiError               message         token is missing
+        @apiError               message[2]         token is invalid
 
         """
         updated_user = request.json
@@ -767,11 +775,10 @@ class BeneficiaryOrders(Resource):
     @token_required
     def get(self):
         """
-        @api {get} /beneficiaries get all orders of beneficiary
+        @api {get} /beneficiary/orders get all orders of beneficiary
         @apiVersion 1.0.0
         @apiName beneficiaryorders
         @apiGroup Beneficiary
-        @apiDescription get all orders of beneficary
 
         @apiSuccess {Object[]}  orders                 array of beneficiary orders
         @apiSuccess {Number}    orders.donor_id        id of donor
@@ -785,6 +792,9 @@ class BeneficiaryOrders(Resource):
         @apiSuccess {String}    orders.description     description of listing
         @apiSuccess {String}    orders.organisation    organisation of donor
         @apiSuccess {Number}    orders.time_stamp      time stamp of order placement
+
+        @apiError               message         token is missing
+        @apiError               message[2]         token is invalid
 
         """
         token = request.headers.get("x-access-token")
@@ -820,11 +830,10 @@ class DonorOrders(Resource):
     @token_required
     def get(self):
         """
-        @api {get} /beneficiaries get all orders of donor
+        @api {get} /donor/orders get all orders of donor
         @apiVersion 1.0.0
         @apiName donororders
         @apiGroup Donor
-        @apiDescription get all orders of donor
 
 
         @apiSuccess {Object[]}  orders                 array of donor orders
@@ -844,6 +853,9 @@ class DonorOrders(Resource):
         @apiSuccess {String}    orders.description     description of listing
         @apiSuccess {String}    orders.organisation    organisation of donor
         @apiSuccess {Number}    orders.time_stamp      time stamp of order placement
+
+        @apiError               message         token is missing
+        @apiError               message[2]         token is invalid
 
         """
         token = request.headers.get("x-access-token")
@@ -881,7 +893,7 @@ class DonorOrders(Resource):
 class UploadImage(Resource):
     def post(self):
         """
-        @api {post} /beneficiary upload image to imgur
+        @api {post} /uploadimage upload image to imgur
         @apiVersion 1.0.0
         @apiName uploadimage
         @apiGroup Listing
@@ -891,7 +903,7 @@ class UploadImage(Resource):
         @apiSuccess {String}    url             image url
 
         @apiError               message         No file sent
-        @apiError               message         No selected file
+        @apiError               message[2]         No selected file
         """
         # check if the post request has the file part
         if 'file' not in request.files:

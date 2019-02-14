@@ -24,12 +24,12 @@ def send_mail(to_email, donor, beneficiary, listing):
     data = {
                 "personalizations": [
                     {
-                    "to": [
-                        {
-                        "email": to_email
-                        }
-                    ],
-                    "subject": "Order placed for your product"
+                        "to": [
+                            {
+                                "email": to_email
+                            }
+                        ],
+                        "subject": "Order placed for your product"
                     }
                 ],
                 "from": {
@@ -41,7 +41,7 @@ def send_mail(to_email, donor, beneficiary, listing):
                         "type": "text/plain",
                         "value": text
                     }
-                ]
+                            ]
             }
     response = sg.client.mail.send.post(request_body=data)
     print(response.status_code)
@@ -360,11 +360,11 @@ class Listing(Resource):
                     continue
                 if listing.quantity < 1:
                     continue
-                l = {"listing_id": listing.id,
-                     "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                     "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
-                     "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
-                listing_list.append(l)
+                _list = {"listing_id": listing.id,
+                         "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
+                         "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                         "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
+                listing_list.append(_list)
             return {"listing": listing_list}, 200
 
         elif send_all == "1":
@@ -411,10 +411,10 @@ class Listing(Resource):
         donor = Donor.query.filter_by(
             username=token_data.get('username')).first()
         # print(donor.username, "xxx")
-        l = Listings(quantity=listing.get('quantity'), expiry=listing.get('expiry'),
-                     description=listing.get('description'), type=listing.get('type'),
-                     image=listing.get('image'), donor_id=donor.id)
-        db.session.add(l)
+        _list = Listings(quantity=listing.get('quantity'), expiry=listing.get('expiry'),
+                         description=listing.get('description'), type=listing.get('type'),
+                         image=listing.get('image'), donor_id=donor.id)
+        db.session.add(_list)
         db.session.commit()
         return {"message": "listing added"}, 200
 
@@ -436,12 +436,12 @@ class Order(Resource):
         orders = Orders.query.all()
         order_list = []
         for order in orders:
-            l = {"donor_id": order.donor_id,
-                 "beneficiary_id": order.beneficiary_id,
-                 "listing_id": order.listing_id,
-                 "quantity": order.quantity,
-                 "time_stamp": order.time_stamp}
-            order_list.append(l)
+            _list = {"donor_id": order.donor_id,
+                     "beneficiary_id": order.beneficiary_id,
+                     "listing_id": order.listing_id,
+                     "quantity": order.quantity,
+                     "time_stamp": order.time_stamp}
+            order_list.append(_list)
         print(order_list)
         return {"orders": order_list}, 200
 
@@ -531,10 +531,10 @@ class DonorListings(Resource):
         d = dict()
         # first parsing individual listings. overcomes object 'Listings' cannot be jsonify.
         for listing in listings:
-            l = {"listing_id": listing.id,
-                 "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                 "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}
-            parsed_listings.append(l)
+            _list = {"listing_id": listing.id,
+                     "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
+                     "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}
+            parsed_listings.append(_list)
 
         count = 0
         all_listings = []
@@ -587,6 +587,7 @@ class SingleListing(Resource):
 
 
 class UpdateListing(Resource):
+    @token_required
     def post(self):
         """
         @api {post} /updatelisting update listing info
@@ -621,7 +622,6 @@ class UpdateListing(Resource):
 
 
 class DeleteListing(Resource):
-    # very prone to exploitation. anyone can delete anything.
     @token_required
     def post(self):
         """
@@ -663,7 +663,7 @@ class DeleteListing(Resource):
 class Profile(Resource):
     @token_required
     def get(self):
-        """
+        """ 
         @api {get} /user get details of user
         @apiVersion 1.0.0
         @apiName profile
@@ -693,7 +693,7 @@ class Profile(Resource):
         if type == 'donor':
             user = Donor.query.filter_by(username=username).first()
             address = Address.query.filter_by(donor_id=user.id).first()
-            u = {'first_name': user.first_name, 'last_name': user.last_name,'id': user.id, 'phone_no': user.phone_no,
+            u = {'first_name': user.first_name, 'last_name': user.last_name, 'id': user.id, 'phone_no': user.phone_no,
                  'email': user.email, 'username': user.username, 'organisation': user.organisation, 'street': address.street, 'landmark': address.landmark,
                  'city': address.city, 'country': address.country}
         elif type == 'beneficiary':
@@ -807,7 +807,7 @@ class BeneficiaryOrders(Resource):
             address = Address.query.filter_by(donor_id=order.donor_id).first()
             donor = Donor.query.filter_by(id=order.donor_id).first()
             listing = Listings.query.get(order.listing_id)
-            l = {
+            _list = {
                 "donor_id": order.donor_id,
                 "beneficiary_id": order.beneficiary_id,
                 "listing_id": order.listing_id,
@@ -821,7 +821,7 @@ class BeneficiaryOrders(Resource):
                 "description": listing.description,
                 "organisation": donor.organisation
             }
-            order_list.append(l)
+            order_list.append(_list)
         order_list.reverse()
         return {"orders": order_list}
 
@@ -868,23 +868,23 @@ class DonorOrders(Resource):
             address = Address.query.filter_by(donor_id=order.donor_id).first()
             listing = Listings.query.get(order.listing_id)
             beneficiary = Beneficiary.query.get(order.beneficiary_id)
-            l = {"donor_id": order.donor_id,
-                 "beneficiary_id": order.beneficiary_id,
-                 "first_name": beneficiary.first_name,
-                 "last_name": beneficiary.last_name,
-                 "email": beneficiary.email,
-                 "phone_no": beneficiary.phone_no,
-                 "listing_id": order.listing_id,
-                 "quantity": order.quantity,
-                 "time_stamp": order.time_stamp,
-                 "street": address.street,
-                 "landmark": address.landmark,
-                 "city": address.city,
-                 "country": address.country,
-                 "image": listing.image,
-                 "description": listing.description,
-                 "organisation": donor.organisation}
-            order_list.append(l)
+            _list = {"donor_id": order.donor_id,
+                     "beneficiary_id": order.beneficiary_id,
+                     "first_name": beneficiary.first_name,
+                     "last_name": beneficiary.last_name,
+                     "email": beneficiary.email,
+                     "phone_no": beneficiary.phone_no,
+                     "listing_id": order.listing_id,
+                     "quantity": order.quantity,
+                     "time_stamp": order.time_stamp,
+                     "street": address.street,
+                     "landmark": address.landmark,
+                     "city": address.city,
+                     "country": address.country,
+                     "image": listing.image,
+                     "description": listing.description,
+                     "organisation": donor.organisation}
+            order_list.append(_list)
         order_list.reverse()
         return {"orders": order_list}
 

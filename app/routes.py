@@ -138,9 +138,9 @@ def createdonor():
     """
     donor = request.json
     if not donor:
-        return {"message": "not json"}, 400
+        return jsonify({"message": "not json"}), 400
     if not donor.get("street"):
-        return {"message": "address street not provided"}, 400
+        return jsonify({"message": "address street not provided"}), 400
     print(donor)
     check_donor = Donor.query.filter_by(email=donor.get('email')).first()
     if check_donor:
@@ -262,9 +262,9 @@ def createbeneficiary():
     """
     beneficiary = request.json
     if not beneficiary:
-        return {"message": "not json"}, 400
+        return jsonify({"message": "not json"}), 400
     if not beneficiary.get("street"):
-        return {"message": "address street not provided"}, 400
+        return jsonify({"message": "address street not provided"}), 400
     check_beneficiary = Beneficiary.query.filter_by(
         email=beneficiary.get('email')).first()
     if check_beneficiary:

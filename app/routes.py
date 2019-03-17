@@ -263,8 +263,6 @@ def createbeneficiary():
     beneficiary = request.json
     if not beneficiary:
         return jsonify({"message": "not json"}), 400
-    if not beneficiary.get("street"):
-        return jsonify({"message": "address street not provided"}), 400
     check_beneficiary = Beneficiary.query.filter_by(
         email=beneficiary.get('email')).first()
     if check_beneficiary:

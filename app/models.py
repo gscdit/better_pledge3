@@ -70,6 +70,7 @@ class Listings(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     quantity = db.Column(db.Integer)
     expiry = db.Column(db.String(20))
+    time_stamp = db.Column(db.DateTime)
     description = db.Column(db.String(250))
     type = db.Column(db.String(10))
     image = db.Column(db.String(100))

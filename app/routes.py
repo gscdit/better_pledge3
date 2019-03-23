@@ -326,6 +326,15 @@ class Login(Resource):
             return None
 
 
+def check_expiry(listing):
+    expiry_hours = int(listing.expiry)
+    expiry_time = listing.time_stamp + datetime.timedelta(hours=expiry_hours)
+    if datetime.datetime.utcnow() > expiry_time:
+        listing.quantity = 0
+        db.session.commit()
+    return listing
+
+
 class Listing(Resource):
     def get(self):
         """
@@ -360,6 +369,7 @@ class Listing(Resource):
                     continue
                 if listing.quantity < 1:
                     continue
+                listing = check_expiry(listing)
                 _list = {"listing_id": listing.id,
                          "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                          "type": listing.type, "phone_no": donor.phone_no, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
@@ -374,8 +384,8 @@ class Listing(Resource):
                 donor = Donor.query.get(listing.donor_id)
                 address = Address.query.filter_by(
                     donor_id=listing.donor_id).first()
-                # if listing.quantity < 1:
-                #     continue
+                if not listing.quantity < 1:
+                    listing = check_expiry(listing)
                 listing_dict[listing.id] = {"listing_id": listing.id,
                                             "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                                             "type": listing.type, "phone_no": donor.phone_no, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
@@ -412,7 +422,7 @@ class Listing(Resource):
             username=token_data.get('username')).first()
         # print(donor.username, "xxx")
         _list = Listings(quantity=listing.get('quantity'), expiry=listing.get('expiry'),
-                         description=listing.get('description'), type=listing.get('type'),
+                         description=listing.get('description'), time_stamp=datetime.datetime.utcnow(), type=listing.get('type'),
                          image=listing.get('image'), donor_id=donor.id)
         db.session.add(_list)
         db.session.commit()
@@ -484,15 +494,16 @@ class Order(Resource):
             beneficiary = Beneficiary.query.filter_by(
                 username=beneficiary_username).first()
             if not beneficiary:
-                return {'message': 'beneficiary not found', 'username': beneficiary_username, "error": 1}, 400
+                return {'message': 'beneficiary not found', 'username': beneficiary_username, "error": 1}
 
             listing = Listings.query.get(order.get('listing_id'))
             quantity = orders[i].get('quantity')
+            listing = check_expiry(listing)
             if quantity < 0:
-                return {'message': 'listing quantity less than 0', "error": 1}, 400
+                return {'message': 'order quantity less than 0', "error": 1}
             listing.quantity -= int(quantity)
             if listing.quantity < 0:
-                return {'message': 'quantity more than stock', "error": 1}, 400
+                return {'message': 'quantity more than stock', "error": 1}
             o = Orders(donor=donor, beneficiary_id=beneficiary.id,
                        listing=listing, quantity=quantity, time_stamp=json_data.get('time_stamp'))
             db.session.add(o)
@@ -531,6 +542,8 @@ class DonorListings(Resource):
         d = dict()
         # first parsing individual listings. overcomes object 'Listings' cannot be jsonify.
         for listing in listings:
+            if not listing.quantity < 1:
+                listing = check_expiry(listing)
             _list = {"listing_id": listing.id,
                      "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
                      "type": listing.type, "image": listing.image, "donor_id": listing.donor_id}
@@ -579,6 +592,8 @@ class SingleListing(Resource):
         listing = Listings.query.get(listing_id)
         if not listing:
             return {"message": "No listing available with that listing_id"}, 400
+        if not listing.quantity < 1:
+            listing = check_expiry(listing)
         donor = Donor.query.get(listing.donor_id)
         address = Address.query.filter_by(donor_id=listing.donor_id).first()
         return {"listing_id": listing.id, "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
@@ -617,6 +632,7 @@ class UpdateListing(Resource):
         listing.expiry = update_listing.get("expiry")
         listing.type = update_listing.get("type")
         listing.image = update_listing.get("image")
+        listing.time_stamp = datetime.datetime.utcnow()
         db.session.commit()
         return {"message": "listing updated"}, 200
 

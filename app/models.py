@@ -19,6 +19,9 @@ class Donor(db.Model):
 class Beneficiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(30))
+    status = db.Column(db.Integer)
+    registration_no = db.Column(db.String(20))
+    ngo_unique_id = db.Column(db.String(20))
     last_name = db.Column(db.String(30))
     email = db.Column(db.String(80))
     username = db.Column(db.String(40), unique=True)
@@ -60,6 +63,7 @@ class Orders(db.Model):
         'listings.id'), nullable=False)
     quantity = db.Column(db.String(20))
     time_stamp = db.Column(db.String(20))
+    # pickup_time = db.Column(db.String(20))
 
 
 class Listings(db.Model):

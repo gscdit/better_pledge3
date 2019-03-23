@@ -227,11 +227,11 @@ def beneficiaries():
         address = Address.query.filter_by(beneficiary=beneficiary).first()
         if address:
             d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
-                 'email': beneficiary.email, 'username': beneficiary.username, 'city': address.city, 'country': address.country,
+                 'email': beneficiary.email, 'username': beneficiary.username, 'status': beneficiary.status, 'city': address.city, 'country': address.country,
                  'street': address.street, 'landmark': address.landmark}
         else:
             d = {'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'password_hash': beneficiary.password_hash, 'id': beneficiary.id, 'phone_no': beneficiary.phone_no,
-                 'email': beneficiary.email, 'username': beneficiary.username}
+                 'email': beneficiary.email, 'username': beneficiary.username, 'status': beneficiary.status}
         beneficiaries_list.append(d)
     return jsonify({'beneficiaries': beneficiaries_list}), 200
 
@@ -276,7 +276,7 @@ def createbeneficiary():
             username = username + '1'
             check_username = username_in_database_beneficiary(username)
     u = Beneficiary(first_name=beneficiary.get('first_name'), last_name=beneficiary.get('last_name'), email=beneficiary.get('email'), phone_no=beneficiary.get('phone_no'), username=username,
-                    password_hash=password_hash, type=1)
+                    password_hash=password_hash, type=1, status=0)
     address = Address(beneficiary=u, city=beneficiary.get(
         'city'), street=beneficiary.get('street'), country=beneficiary.get('country'), landmark=beneficiary.get('landmark'))
     db.session.add(address)
@@ -310,13 +310,15 @@ class Login(Resource):
                 email=user_data.get('email')).first()
             organisation = ""
             type = 'beneficiary'
+            status = user.status
         else:
             user = Donor.query.filter_by(email=user_data.get('email')).first()
             organisation = user.organisation
             type = 'donor'
+            status = 1
         if user and bcrypt.check_password_hash(user.password_hash, user_data.get('password')):
             token = jwt.encode(
-                {'username': user.username, 'first_name': user.first_name, 'organisation': organisation, 'last_name': user.last_name, 'type': type, 'id': user.id,
+                {'username': user.username, 'first_name': user.first_name, 'status': status, 'organisation': organisation, 'last_name': user.last_name, 'type': type, 'id': user.id,
                     'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
                 app.config['SECRET_KEY'])
             return {'token': token.decode('UTF-8')}, 200
@@ -360,7 +362,7 @@ class Listing(Resource):
                     continue
                 _list = {"listing_id": listing.id,
                          "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                         "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                         "type": listing.type, "phone_no": donor.phone_no, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
                          "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
                 listing_list.append(_list)
             return {"listing": listing_list}, 200
@@ -376,7 +378,7 @@ class Listing(Resource):
                 #     continue
                 listing_dict[listing.id] = {"listing_id": listing.id,
                                             "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                                            "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                                            "type": listing.type, "phone_no": donor.phone_no, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
                                             "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
             return listing_dict
         else:
@@ -580,7 +582,7 @@ class SingleListing(Resource):
         donor = Donor.query.get(listing.donor_id)
         address = Address.query.filter_by(donor_id=listing.donor_id).first()
         return {"listing_id": listing.id, "quantity": listing.quantity, "expiry": listing.expiry, "description": listing.description,
-                "type": listing.type, "image": listing.image, "donor_id": listing.donor_id, "street": address.street,
+                "type": listing.type, "image": listing.image, "phone_no": donor.phone_no, "donor_id": listing.donor_id, "street": address.street,
                 "landmark": address.landmark, "city": address.city, "country": address.country, 'organisation': donor.organisation}
 
 
@@ -740,6 +742,7 @@ class UpdateUser(Resource):
             user = Donor.query.filter_by(username=username).first()
             user.organisation = updated_user.get('organisation')
             address = Address.query.filter_by(donor_id=user.id).first()
+            status = 1
             check_username = Donor.query.filter_by(
                 username=updated_user['username']).first()
             if check_username:
@@ -748,6 +751,7 @@ class UpdateUser(Resource):
         elif type == 'beneficiary':
             user = Beneficiary.query.filter_by(username=username).first()
             address = Address.query.filter_by(beneficiary_id=user.id).first()
+            status = user.status
             check_username = Beneficiary.query.filter_by(
                 username=updated_user['username']).first()
             if check_username.id != user.id:
@@ -763,7 +767,7 @@ class UpdateUser(Resource):
         user.username = updated_user.get('username')
         db.session.commit()
         token = jwt.encode(
-            {'username': user.username, 'first_name': user.first_name, 'type': type, 'id': user.id,
+            {'username': user.username, 'first_name': user.first_name, 'last_name': user.last_name, 'status': status, 'type': type, 'id': user.id,
              'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
             app.config['SECRET_KEY'])
         return {'token': token.decode('UTF-8'), 'message': 1}, 200
@@ -939,6 +943,79 @@ def upload_to_imgur(path):
     return url
 
 
+# only for beneficiary
+class AddVerificationDetails(Resource):
+    def post(self):
+        """
+        @api {post} /uploadimage upload image to imgur
+        @apiVersion 1.0.0
+        @apiName uploadimage
+        @apiGroup Listing
+
+        @apiParam {Bytes}       file            file object.
+
+        @apiSuccess {String}    url             image url
+
+        @apiError               message         No file sent
+        @apiError               message[2]         No selected file
+        """
+        json_data = request.json
+        token = request.headers.get("x-access-token")
+        token_data = jwt.decode(token, app.config['SECRET_KEY'])
+        username = token_data.get("username")
+        beneficiary = Beneficiary.query.filter_by(username=username).first()
+        beneficiary.ngo_unique_id = json_data.get("ngo_unique_id")
+        beneficiary.registration_no = json_data.get("registration_no")
+        beneficiary.status = 2
+        db.session.commit()
+        token = jwt.encode(
+            {'username': beneficiary.username, 'first_name': beneficiary.first_name, 'last_name': beneficiary.last_name, 'status': 2, 'type': 'beneficiary', 'id': beneficiary.id,
+             'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
+            app.config['SECRET_KEY'])
+        return {'token': token.decode('UTF-8')}, 200
+
+
+# only for beneficiary (on hold for now)
+# class UploadCertificate(Resource):
+#     def post(self):
+#         """
+#         @api {post} /uploadimage upload image to imgur
+#         @apiVersion 1.0.0
+#         @apiName uploadimage
+#         @apiGroup Listing
+
+#         @apiParam {Bytes}       file            file object.
+
+#         @apiSuccess {String}    url             image url
+
+#         @apiError               message         No file sent
+#         @apiError               message[2]         No selected file
+#         """
+#         # check if the post request has the file part
+#         if 'file' not in request.files:
+#             return {"message": "No file sent"}, 400
+#         file = request.files['file']
+#         # if user does not select file, browser also
+#         # submit an empty part without filename
+#         if file.filename == '':
+#             return {'massage': 'No selected file'}, 400
+#         if file and allowed_file(file.filename):
+#             filename = secure_filename(file.filename)
+#             path = os.path.join(app.root_path, "certificates", filename)
+#             file.save(path)
+#             # url = upload_to_imgur(path)
+#             token = request.headers.get("x-access-token")
+#             token_data = jwt.decode(token, app.config['SECRET_KEY'])
+#             username = token_data.get("username")
+#             beneficiary = Beneficiary.query.filter_by(username=username).first()
+#             beneficiary.status = 2
+#             db.commit()
+#             token = jwt.encode(
+#                 {'username': beneficiary.username, 'first_name': beneficiary.first_name, 'type': type, 'id': beneficiary.id,
+#                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=365)},
+#                 app.config['SECRET_KEY'])
+#             return {'token': token.decode('UTF-8'), 'message': 1}, 200
+
 api.add_resource(Login, '/login')
 api.add_resource(Listing, '/listing')
 api.add_resource(Order, '/order')
@@ -951,6 +1028,8 @@ api.add_resource(UpdateUser, '/user/update')
 api.add_resource(BeneficiaryOrders, '/beneficiary/orders')
 api.add_resource(DonorOrders, '/donor/orders')
 api.add_resource(UploadImage, '/uploadimage')
+# api.add_resource(UploadCertificate, '/uploadcertificate')
+api.add_resource(AddVerificationDetails, '/addverificationdetails')
 
 
 # notification to donor {later}

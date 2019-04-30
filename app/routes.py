@@ -327,8 +327,8 @@ class Login(Resource):
 
 
 def check_expiry(listing):
-    expiry_hours = int(listing.expiry)
-    expiry_time = listing.time_stamp + datetime.timedelta(hours=expiry_hours)
+    expiry_seconds = float(listing.expiry) * 3600
+    expiry_time = listing.time_stamp + datetime.timedelta(seconds=expiry_seconds)
     if datetime.datetime.utcnow() > expiry_time:
         listing.quantity = 0
         db.session.commit()
